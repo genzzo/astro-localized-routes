@@ -1,0 +1,44 @@
+{
+  "name": "astro-i18n-routes",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "A better version of Astro's i18n routing.",
+  "author": "genzzo",
+  "keywords": [
+    "astro",
+    "i18n",
+    "routing",
+    "astro-integration"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/genzzo/astro-i18n-routes#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/genzzo/astro-i18n-routes.git"
+  },
+  "bugs": {
+    "url": "https://github.com/genzzo/astro-i18n-routes/issues"
+  },
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "release": "bumpp",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "bumpp": "^11.1.0",
+    "tsdown": "^0.22.5",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
