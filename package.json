@@ -1,42 +1,48 @@
 {
   "name": "astro-i18n-routes",
-  "type": "module",
   "version": "0.0.0",
   "description": "A better version of Astro's i18n routing.",
-  "author": "genzzo",
   "keywords": [
     "astro",
+    "astro-integration",
     "i18n",
-    "routing",
-    "astro-integration"
+    "routing"
   ],
-  "license": "MIT",
   "homepage": "https://github.com/genzzo/astro-i18n-routes#readme",
+  "bugs": {
+    "url": "https://github.com/genzzo/astro-i18n-routes/issues"
+  },
+  "license": "MIT",
+  "author": "genzzo",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/genzzo/astro-i18n-routes.git"
   },
-  "bugs": {
-    "url": "https://github.com/genzzo/astro-i18n-routes/issues"
-  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
   "exports": {
     ".": "./dist/index.mjs",
     "./package.json": "./package.json"
   },
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
+    "lint": "oxlint --deny-warnings",
+    "lint:fix": "oxlint --deny-warnings --fix",
+    "format": "oxfmt",
+    "format:fix": "oxfmt --write",
     "release": "bumpp",
     "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
     "bumpp": "^11.1.0",
+    "oxfmt": "^0.67.0",
+    "oxlint": "^1.82.0",
     "tsdown": "^0.22.5",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
