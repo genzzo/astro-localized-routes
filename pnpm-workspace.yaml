@@ -1,0 +1,6 @@
+packages:
+  - playgrounds/*
+
+allowBuilds:
+  esbuild: true
+  sharp: false
