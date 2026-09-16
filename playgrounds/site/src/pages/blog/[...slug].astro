@@ -1,0 +1,9 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+export const getStaticPaths = async () => {
+  return [{ params: { slug: "example-blog-post" } }];
+};
+---
+
+<Layout>Test</Layout>

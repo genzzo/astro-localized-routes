@@ -10,6 +10,7 @@ export default defineConfig({
       locales: ["en", "fr", "de"],
       defaultLocale: "en",
       routes: {},
+      routableExtensions: [".astro", ".md", ".html", ".markdown"],
     }),
   ],
 });
