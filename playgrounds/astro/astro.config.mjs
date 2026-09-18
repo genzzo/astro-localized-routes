@@ -2,6 +2,24 @@
 import { defineConfig } from "astro/config";
 import routingInternational from "astro-routing-international";
 
+const routesConfig = {
+  "/privacy": {
+    en: "/privacy",
+    fr: "/confidentialite",
+    de: "/datenschutz",
+  },
+  "/projects": {
+    en: "/projects",
+    fr: "/projets",
+    de: "/projekte",
+  },
+  "/projects/[slug]": {
+    en: "/projects/[slug]",
+    fr: "/projets/[slug]",
+    de: "/projekte/[slug]",
+  },
+};
+
 export default defineConfig({
   srcDir: "../site/src",
   publicDir: "../site/public",
@@ -9,8 +27,14 @@ export default defineConfig({
     routingInternational({
       locales: ["en", "fr", "de"],
       defaultLocale: "en",
-      routes: {},
+      routes: routesConfig,
       routableExtensions: [".astro", ".md", ".html", ".markdown"],
+      missingRouteBehavior: (route) => {
+        if (route.startsWith("/blog")) {
+          return "use_default";
+        }
+        return "error";
+      },
     }),
   ],
 });

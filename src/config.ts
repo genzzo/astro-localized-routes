@@ -1,5 +1,7 @@
 import type { RoutableExtensions } from "./types";
 
+type MissingRouteBehavior = "error" | "warn" | "use_default" | "ignore";
+
 export interface AstroRoutingInternationalOptions<Locales extends string = string> {
   /**
    * All supported locales for the site.
@@ -28,17 +30,21 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    * }
    * ```
    */
-  routes: Record<string, Partial<Record<NoInfer<Locales>, string>>>;
+  routes: Partial<Record<string, Partial<Record<NoInfer<Locales>, string>>>>;
   /**
    * Behavior when a route is missing for a locale.
    *
-   * - `"error"`: Throw an error if a route is missing for a locale.
-   * - `"warn"`: Log a warning if a route is missing for a locale.
-   * - `"ignore"`: Ignore missing routes for locales.
+   * - `"error"`: Throw an error.
+   * - `"warn"`: Log a warning.
+   * - `"ignore"`: Ignore the missing route.
+   * - `"use_default"`: Use the base pattern of the route with the injected locale.
+   * - A function that receives the missing route and locale, and returns the desired behavior.
    *
    * @default "error"
    */
-  missingRouteBehavior?: "error" | "warn" | "ignore";
+  missingRouteBehavior?:
+    | MissingRouteBehavior
+    | ((routePattern: string, locale: Locales) => MissingRouteBehavior);
   /**
    * List of astro routable file extensions to include for international routing.
    *
@@ -60,6 +66,12 @@ export function resolveOptions<Locales extends string = string>(
 ): AstroRoutingInternationalResolvedOptions<Locales> {
   return {
     ...options,
+    routes: {
+      "/": Object.fromEntries(options.locales.map((locale) => [locale, "/"])) as Partial<
+        Record<NoInfer<Locales>, string>
+      >,
+      ...options.routes,
+    },
     prefixDefaultLocale: options.prefixDefaultLocale ?? false,
     missingRouteBehavior: options.missingRouteBehavior ?? "error",
     routableExtensions: options.routableExtensions ?? [".astro"],
