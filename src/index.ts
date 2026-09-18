@@ -52,12 +52,24 @@ export default function routingInternational<Locales extends string>(
               }
             }
 
-            if (!localizedPattern.startsWith("/")) {
-              throw new Error(`Localized pattern must start with a '/': ${localizedPattern}`);
+            if (locale === resolvedOptions.defaultLocale) {
+              if (resolvedOptions.prefixDefaultLocale) {
+                if (localizedPattern === "/") {
+                  localizedPattern = `/${locale}`;
+                } else {
+                  localizedPattern = `/${locale}${localizedPattern}`;
+                }
+              }
+            } else {
+              if (localizedPattern === "/") {
+                localizedPattern = `/${locale}`;
+              } else {
+                localizedPattern = `/${locale}${localizedPattern}`;
+              }
             }
 
             injectRoute({
-              pattern: localizedPattern === "/" ? `/${locale}` : `/${locale}${localizedPattern}`,
+              pattern: localizedPattern,
               entrypoint: path.join(pagesDir, file),
             });
           }
