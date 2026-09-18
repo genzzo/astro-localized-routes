@@ -2,7 +2,9 @@
 import { defineConfig } from "astro/config";
 import routingInternational from "astro-routing-international";
 
-const routesConfig = {
+const defaultLocale = "fr";
+
+const routesMap = {
   "/privacy": {
     en: "/privacy",
     fr: "/confidentialite",
@@ -26,18 +28,20 @@ export default defineConfig({
   integrations: [
     routingInternational({
       locales: ["en", "fr", "de"],
-      defaultLocale: "en",
-      routes: routesConfig,
+      defaultLocale: defaultLocale,
+      routes: routesMap,
       routableExtensions: [".astro", ".md", ".html", ".markdown"],
       missingRouteBehavior: (route, locale) => {
         if (route === "/blog") {
           return "use_default";
         }
-        if (locale !== "en" && route === "/blog/[...slug]") {
-          return "ignore";
+        if (route === "/blog/[...slug]") {
+          if (locale !== defaultLocale) return "ignore";
+          return "use_default";
         }
         return "error";
       },
+      removeOriginalRoutes: true,
     }),
   ],
 });

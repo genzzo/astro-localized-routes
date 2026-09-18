@@ -2,7 +2,17 @@
 import Layout from "../../layouts/Layout.astro";
 
 export const getStaticPaths = async () => {
-  return [{ params: { slug: "example-blog-post" } }];
+  return Array.from({ length: 50 }, (_, i) => {
+    const numberOfSubPaths = Math.floor(Math.random() * 3) + 1;
+    const subPaths = Array.from(
+      { length: numberOfSubPaths },
+      (_, j) => `sub-path-${j}`,
+    );
+
+    return {
+      params: { slug: [`blog-post-${i}`, ...subPaths].join("/") },
+    };
+  });
 };
 ---
 

@@ -2,7 +2,9 @@
 import Layout from "../../layouts/Layout.astro";
 
 export const getStaticPaths = async () => {
-  return [{ params: { slug: "example-project" } }];
+  return Array.from({ length: 50 }, (_, i) => ({
+    params: { slug: `project-${i}` },
+  }));
 };
 ---
 

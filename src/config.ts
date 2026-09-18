@@ -55,6 +55,20 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    * @default [".astro"]
    */
   routableExtensions?: [RoutableExtensions, ...RoutableExtensions[]];
+  /**
+   * Remove the original routes defined in the `/pages` directory.
+   *
+   * This is helpful for scenarios where the default locale is a different language
+   * from what a developer might use to name the route. For example, if the default
+   * locale is French, the developer might name a page `/about.astro` instead of
+   * `/a-propos.astro`.
+   *
+   * This allows the developer to keep the page name in a shared  language-neutral way
+   * while still providing localized routes for the default locale at the root level.
+   *
+   * @default false
+   */
+  removeOriginalRoutes?: boolean;
 }
 
 interface AstroRoutingInternationalResolvedOptions<
@@ -75,5 +89,6 @@ export function resolveOptions<Locales extends string = string>(
     prefixDefaultLocale: options.prefixDefaultLocale ?? false,
     missingRouteBehavior: options.missingRouteBehavior ?? "error",
     routableExtensions: options.routableExtensions ?? [".astro"],
+    removeOriginalRoutes: options.removeOriginalRoutes ?? true,
   };
 }
