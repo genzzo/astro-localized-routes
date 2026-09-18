@@ -29,9 +29,12 @@ export default defineConfig({
       defaultLocale: "en",
       routes: routesConfig,
       routableExtensions: [".astro", ".md", ".html", ".markdown"],
-      missingRouteBehavior: (route) => {
-        if (route.startsWith("/blog")) {
+      missingRouteBehavior: (route, locale) => {
+        if (route === "/blog") {
           return "use_default";
+        }
+        if (locale !== "en" && route === "/blog/[...slug]") {
+          return "ignore";
         }
         return "error";
       },
