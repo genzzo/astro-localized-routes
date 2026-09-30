@@ -41,7 +41,7 @@ export default defineConfig({
         }
         return "error";
       },
-      removeOriginalRoutes: true,
+      removeOriginalPageRoutes: true,
     }),
   ],
 });
