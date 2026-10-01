@@ -4,7 +4,13 @@ import { resolveOptions } from "./config";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
-import { isErrorPagePattern, isRootPattern, pageFileToPattern } from "./pattern";
+import {
+  ASTRO_ROUTE_EXTENSIONS,
+  ClaimedPatternsChecker,
+  isErrorPagePattern,
+  isRootPattern,
+  pageFileToPattern,
+} from "./pattern";
 import { removeHiddenRoutesFromBuild } from "./build";
 
 const INTEGRATION_NAME = "astro-routing-international";
@@ -26,12 +32,20 @@ export default function routingInternational<Locales extends string>(
 
         const srcDir = fileURLToPath(astroConfig.srcDir);
         const pagesDir = path.join(srcDir, "pages");
-        const pageFiles = fs.globSync(
+        const allPageFiles = fs.globSync(
+          ASTRO_ROUTE_EXTENSIONS.map((extension) => `**/*${extension}`),
+          { cwd: pagesDir },
+        );
+        const selectedPageFiles = fs.globSync(
           resolvedOptions.routableExtensions.map((extension) => `**/*${extension}`),
           { cwd: pagesDir },
         );
 
-        for (const file of pageFiles) {
+        // collect existing Astro route patterns to check if they conflict with localized patterns
+        const claimedPatternsChecker = new ClaimedPatternsChecker();
+        claimedPatternsChecker.collectFromPageFiles(allPageFiles);
+
+        for (const file of selectedPageFiles) {
           const basePattern = pageFileToPattern(file);
           // route ignored by Astro's routing system (e.g. `_filename.astro`)
           if (basePattern === null) continue;
@@ -76,6 +90,13 @@ export default function routingInternational<Locales extends string>(
               keepOriginal = true; // served by the page's own route
               continue;
             }
+
+            // check if the localized pattern conflicts with any existing claimed patterns
+            const claimTrial = claimedPatternsChecker.tryClaim(localizedPattern, file, locale);
+            if (!claimTrial.claimed)
+              throw new Error(
+                `Localized pattern conflict: pattern "${localizedPattern}" for file "${file}" and locale "${locale}" conflicts with existing pattern "${claimTrial.existing.pattern}" for file "${claimTrial.existing.file}"${claimTrial.existing.locale ? ` and locale "${claimTrial.existing.locale}"` : ""}`,
+              );
 
             injectRoute({ pattern: localizedPattern, entrypoint: path.join(pagesDir, file) });
           }
