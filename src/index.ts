@@ -66,20 +66,10 @@ export default function routingInternational<Locales extends string>(
               }
             }
 
-            if (locale === resolvedOptions.defaultLocale) {
-              if (resolvedOptions.prefixDefaultLocale) {
-                if (isRootPattern(localizedPattern)) {
-                  localizedPattern = `/${locale}`;
-                } else {
-                  localizedPattern = `/${locale}${localizedPattern}`;
-                }
-              }
-            } else {
-              if (isRootPattern(localizedPattern)) {
-                localizedPattern = `/${locale}`;
-              } else {
-                localizedPattern = `/${locale}${localizedPattern}`;
-              }
+            if (locale !== resolvedOptions.defaultLocale || resolvedOptions.prefixDefaultLocale) {
+              localizedPattern = isRootPattern(localizedPattern)
+                ? `/${locale}`
+                : `/${locale}${localizedPattern}`;
             }
 
             if (localizedPattern === basePattern) {
