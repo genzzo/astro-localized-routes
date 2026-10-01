@@ -2,6 +2,33 @@ import type { RoutableExtensions } from "./types";
 
 type MissingRouteBehavior = "error" | "warn" | "use_default" | "ignore";
 
+type AstroRemoveOriginalPageRoutesOptions = {
+  /**
+   * Enable the removal of original page routes.
+   *
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * Astro builds a fresh set of pages on build for every integration, meaning routes
+   * that are hidden will not be removed for other integrations. For example,
+   * `@astrojs/sitemap` will generate a sitemap which includes all routes, including
+   * those that are supposed to be removed when `enabled` is set to `true`.
+   *
+   * Our integration applies a build wrapper on every `astro:build:done` of other
+   * integrations, forcing the removal of the original page routes for those
+   * integrations as well.
+   *
+   * This option provides an opt-out mechanism for integrations that require having the
+   * original page routes as they were originally.
+   *
+   * **Important: files corresponding to the removed routes will be deleted regardless.**
+   * If the excluded integration needs the files as well, it should be placed as the first
+   * integration in the Astro configuration.
+   */
+  excludedIntegrations?: string[];
+};
+
 export interface AstroRoutingInternationalOptions<Locales extends string = string> {
   /**
    * All supported locales for the site.
@@ -56,7 +83,9 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    */
   routableExtensions?: [RoutableExtensions, ...RoutableExtensions[]];
   /**
-   * Remove the original routes coming from the `/pages` directory.
+   * Remove the original routes coming from the `/pages` directory. **This applies the
+   * removal to all other integrations, see
+   * {@link AstroRemoveOriginalPageRoutesOptions.excludedIntegrations excludedIntegrations}.**
    *
    * This is helpful for scenarios where the default locale is a different language
    * from what might be used to name the route in development. For example, if the
@@ -66,9 +95,9 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    * With this, page names can be kept language-neutral, while still providing localized
    * routes for the default locale at the root level.
    *
-   * @default false
+   * @default { enabled: false }
    */
-  removeOriginalPageRoutes?: boolean;
+  removeOriginalPageRoutes?: AstroRemoveOriginalPageRoutesOptions;
 }
 
 interface AstroRoutingInternationalResolvedOptions<
@@ -89,6 +118,6 @@ export function resolveOptions<Locales extends string = string>(
     prefixDefaultLocale: options.prefixDefaultLocale ?? false,
     missingRouteBehavior: options.missingRouteBehavior ?? "error",
     routableExtensions: options.routableExtensions ?? [".astro"],
-    removeOriginalPageRoutes: options.removeOriginalPageRoutes ?? false,
+    removeOriginalPageRoutes: options.removeOriginalPageRoutes ?? { enabled: false },
   };
 }

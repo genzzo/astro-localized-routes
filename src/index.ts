@@ -4,17 +4,26 @@ import { resolveOptions } from "./config";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
-import { pageFileToPattern } from "./pattern";
+import { isErrorPagePattern, isRootPattern, pageFileToPattern } from "./pattern";
+import { removeHiddenRoutesFromBuild } from "./build";
+
+const INTEGRATION_NAME = "astro-routing-international";
+const VIRTUAL_INTERNAL_ID = "astro-routing-international:internal:virtual";
+const RESOLVED_INTERNAL_ID = `\0${VIRTUAL_INTERNAL_ID}`;
 
 export default function routingInternational<Locales extends string>(
   options: AstroRoutingInternationalOptions<Locales>,
 ): AstroIntegration {
   const resolvedOptions = resolveOptions(options);
 
+  const routePatternsToHide: Set<string> = new Set();
+
   return {
-    name: "astro-routing-international",
+    name: INTEGRATION_NAME,
     hooks: {
-      "astro:config:setup": ({ config: astroConfig, injectRoute }) => {
+      "astro:config:setup": ({ config: astroConfig, injectRoute, addMiddleware, updateConfig }) => {
+        routePatternsToHide.clear();
+
         const srcDir = fileURLToPath(astroConfig.srcDir);
         const pagesDir = path.join(srcDir, "pages");
         const pageFiles = fs.globSync(
@@ -27,8 +36,13 @@ export default function routingInternational<Locales extends string>(
           // route ignored by Astro's routing system (e.g. `_filename.astro`)
           if (basePattern === null) continue;
 
+          if (isErrorPagePattern(basePattern)) continue;
+
+          let keepOriginal = !resolvedOptions.removeOriginalPageRoutes.enabled;
+
           for (const locale of resolvedOptions.locales) {
-            let localizedPattern = resolvedOptions.routes[basePattern]?.[locale];
+            let localizedPattern: string | undefined =
+              resolvedOptions.routes[basePattern]?.[locale];
 
             if (localizedPattern === undefined) {
               const missingRouteBehavior =
@@ -54,29 +68,77 @@ export default function routingInternational<Locales extends string>(
 
             if (locale === resolvedOptions.defaultLocale) {
               if (resolvedOptions.prefixDefaultLocale) {
-                if (localizedPattern === "/") {
+                if (isRootPattern(localizedPattern)) {
                   localizedPattern = `/${locale}`;
                 } else {
                   localizedPattern = `/${locale}${localizedPattern}`;
                 }
               }
             } else {
-              if (localizedPattern === "/") {
+              if (isRootPattern(localizedPattern)) {
                 localizedPattern = `/${locale}`;
               } else {
                 localizedPattern = `/${locale}${localizedPattern}`;
               }
             }
 
-            injectRoute({
-              pattern: localizedPattern,
-              entrypoint: path.join(pagesDir, file),
-            });
+            if (localizedPattern === basePattern) {
+              keepOriginal = true; // served by the page's own route
+              continue;
+            }
+
+            injectRoute({ pattern: localizedPattern, entrypoint: path.join(pagesDir, file) });
+          }
+
+          if (!keepOriginal) {
+            routePatternsToHide.add(basePattern);
           }
         }
+
+        if (!resolvedOptions.removeOriginalPageRoutes.enabled) return;
+
+        updateConfig({
+          vite: {
+            plugins: [
+              {
+                name: VIRTUAL_INTERNAL_ID,
+                resolveId: (id) => (id === VIRTUAL_INTERNAL_ID ? RESOLVED_INTERNAL_ID : null),
+                load(id) {
+                  if (id !== RESOLVED_INTERNAL_ID) return null;
+                  return `export const routePatternsToHide = new Set(${JSON.stringify(Array.from(routePatternsToHide))});`;
+                },
+              },
+            ],
+          },
+        });
+
+        addMiddleware({
+          entrypoint: new URL("./remove-original-routes-middleware.mjs", import.meta.url),
+          order: "pre",
+        });
       },
-      "astro:routes:resolved": ({ routes }) => {
-        console.log(routes);
+      "astro:config:done": ({ config }) => {
+        if (!resolvedOptions.removeOriginalPageRoutes.enabled) return;
+
+        // Wrap other integrations' build done hooks to remove hidden routes
+        for (const integration of config.integrations) {
+          const buildDone = integration.hooks["astro:build:done"];
+          if (
+            integration.name === INTEGRATION_NAME ||
+            resolvedOptions.removeOriginalPageRoutes.excludedIntegrations?.includes(
+              integration.name,
+            ) ||
+            buildDone === undefined
+          )
+            continue;
+
+          integration.hooks["astro:build:done"] = (params) =>
+            buildDone({ ...params, ...removeHiddenRoutesFromBuild(params, routePatternsToHide) });
+        }
+      },
+      "astro:build:done": (params) => {
+        if (!resolvedOptions.removeOriginalPageRoutes.enabled) return;
+        removeHiddenRoutesFromBuild(params, routePatternsToHide);
       },
     },
   };

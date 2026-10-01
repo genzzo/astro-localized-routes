@@ -128,3 +128,11 @@ export function pageFileToPattern(file: string): string | null {
   if (segments === null) return null;
   return segmentsToPattern(segments);
 }
+
+export function isRootPattern(pattern: string): boolean {
+  return pattern === "/";
+}
+
+export function isErrorPagePattern(pattern: string): boolean {
+  return pattern === "/404" || pattern === "/500";
+}

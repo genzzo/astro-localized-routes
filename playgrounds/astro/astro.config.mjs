@@ -30,7 +30,8 @@ export default defineConfig({
       locales: ["en", "fr", "de"],
       defaultLocale: defaultLocale,
       routes: routesMap,
-      routableExtensions: [".astro", ".md", ".html", ".markdown"],
+      routableExtensions: [".astro"],
+      // routableExtensions: [".astro", ".md", ".html", ".markdown"], // Temporarily commented out as it breaks the build
       missingRouteBehavior: (route, locale) => {
         if (route === "/blog") {
           return "use_default";
@@ -41,7 +42,7 @@ export default defineConfig({
         }
         return "error";
       },
-      removeOriginalPageRoutes: true,
+      removeOriginalPageRoutes: { enabled: true },
     }),
   ],
 });
