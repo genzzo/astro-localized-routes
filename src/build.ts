@@ -14,7 +14,7 @@ export function removeHiddenRoutesFromBuild(
     for (const file of files) visiblePathnames.add(outputFileToPathname(file, dir));
   }
 
-  // Astro 6+ writes the rerouted 404 page to a hidden route's files instead of skipping them
+  // Astro writes the rerouted 404 page to a hidden route's files instead of skipping them
   for (const pattern of routePatternsToHide) {
     for (const file of assets.get(pattern) ?? []) {
       if (!visiblePathnames.has(outputFileToPathname(file, dir))) removeOutputFile(file, dir);
@@ -22,7 +22,7 @@ export function removeHiddenRoutesFromBuild(
   }
 
   return {
-    // `pages` lists every rendered pathname, including those that produced no file (Astro 5)
+    // `pages` lists every rendered pathname, the hidden ones included
     pages: pages.filter((page) => visiblePathnames.has(page.pathname.replace(/\/$/, ""))),
     assets: new Map([...assets].filter(([pattern]) => !routePatternsToHide.has(pattern))),
   };
