@@ -11,7 +11,7 @@ import {
   isRootPattern,
   pageFileToPattern,
 } from "./pattern";
-import { removeHiddenRoutesFromBuild } from "./build";
+import { BuildCleaner } from "./build";
 
 const INTEGRATION_NAME = "astro-routing-international";
 const VIRTUAL_INTERNAL_ID = "astro-routing-international:internal:virtual";
@@ -24,11 +24,14 @@ export default function routingInternational<Locales extends string>(
 
   const routePatternsToHide: Set<string> = new Set();
 
+  const buildCleaner = new BuildCleaner();
+
   return {
     name: INTEGRATION_NAME,
     hooks: {
       "astro:config:setup": ({ config: astroConfig, injectRoute, addMiddleware, updateConfig }) => {
         routePatternsToHide.clear();
+        buildCleaner.resetCleanFlag();
 
         const srcDir = fileURLToPath(astroConfig.srcDir);
         const pagesDir = path.join(srcDir, "pages");
@@ -144,12 +147,15 @@ export default function routingInternational<Locales extends string>(
             continue;
 
           integration.hooks["astro:build:done"] = (params) =>
-            buildDone({ ...params, ...removeHiddenRoutesFromBuild(params, routePatternsToHide) });
+            buildDone({
+              ...params,
+              ...buildCleaner.removeHiddenRoutesFromBuild(params, routePatternsToHide),
+            });
         }
       },
       "astro:build:done": (params) => {
         if (!resolvedOptions.removeOriginalPageRoutes.enabled) return;
-        removeHiddenRoutesFromBuild(params, routePatternsToHide);
+        buildCleaner.removeHiddenRoutesFromBuild(params, routePatternsToHide);
       },
     },
   };

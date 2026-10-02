@@ -3,51 +3,80 @@ import fs from "fs";
 
 type BuildDoneParams = Parameters<NonNullable<AstroIntegration["hooks"]["astro:build:done"]>>[0];
 
-export function removeHiddenRoutesFromBuild(
-  { pages, assets, dir }: BuildDoneParams,
-  routePatternsToHide: ReadonlySet<string>,
-): Pick<BuildDoneParams, "pages" | "assets"> {
-  const visiblePathnames = new Set<string>();
+export class BuildCleaner {
+  private hasCleanedBuildFiles = false;
 
-  for (const [pattern, files] of assets) {
-    if (routePatternsToHide.has(pattern)) continue;
-    for (const file of files) visiblePathnames.add(outputFileToPathname(file, dir));
+  removeHiddenRoutesFromBuild(
+    { pages, assets, dir }: BuildDoneParams,
+    routePatternsToHide: ReadonlySet<string>,
+  ): Pick<BuildDoneParams, "pages" | "assets"> {
+    const visiblePathnames = new Set<string>();
+
+    for (const [pattern, files] of assets) {
+      if (routePatternsToHide.has(pattern)) continue;
+      for (const file of files) visiblePathnames.add(this._outputFileToPathname(file, dir));
+    }
+
+    if (!this.hasCleanedBuildFiles) {
+      // Astro writes the pages rerouted to the 404 page through our middleware to a hidden
+      // route's files instead of skipping them. This would cause serving a 404 page with a
+      // 200 response instead of a 404, so we need to remove the actual build files and not
+      // just reroute them
+      for (const pattern of routePatternsToHide) {
+        for (const file of assets.get(pattern) ?? []) {
+          if (!visiblePathnames.has(this._outputFileToPathname(file, dir)))
+            this._removeOutputFile(file, dir);
+        }
+      }
+
+      this.hasCleanedBuildFiles = true;
+    }
+
+    return {
+      // `pages` lists every rendered pathname, the hidden ones included
+      pages: pages.filter((page) => visiblePathnames.has(page.pathname.replace(/\/$/, ""))),
+      assets: new Map([...assets].filter(([pattern]) => !routePatternsToHide.has(pattern))),
+    };
   }
 
-  // Astro writes the rerouted 404 page to a hidden route's files instead of skipping them
-  for (const pattern of routePatternsToHide) {
-    for (const file of assets.get(pattern) ?? []) {
-      if (!visiblePathnames.has(outputFileToPathname(file, dir))) removeOutputFile(file, dir);
-    }
+  /**
+   * Resets the internal flag that tracks whether hidden build files have been cleaned.
+   * This is useful for scripts or tests that perform multiple builds with the same
+   * integration instance.
+   */
+  resetCleanFlag(): void {
+    this.hasCleanedBuildFiles = false;
   }
 
-  return {
-    // `pages` lists every rendered pathname, the hidden ones included
-    pages: pages.filter((page) => visiblePathnames.has(page.pathname.replace(/\/$/, ""))),
-    assets: new Map([...assets].filter(([pattern]) => !routePatternsToHide.has(pattern))),
-  };
-}
+  // `about/index.html` (directory format) and `about.html` (file format) both map to `about`,
+  // matching the page pathname `about/` or `about` once its trailing slash is dropped
+  private _outputFileToPathname(file: URL, outDir: URL): string {
+    return decodeURI(file.href.slice(outDir.href.length))
+      .replace(/(^|\/)index\.html$/, "$1")
+      .replace(/\.html$/, "")
+      .replace(/\/$/, "");
+  }
 
-// `about/index.html` (directory format) and `about.html` (file format) both map to `about`,
-// matching the page pathname `about/` or `about` once its trailing slash is dropped
-function outputFileToPathname(file: URL, outDir: URL): string {
-  return decodeURI(file.href.slice(outDir.href.length))
-    .replace(/(^|\/)index\.html$/, "$1")
-    .replace(/\.html$/, "")
-    .replace(/\/$/, "");
-}
+  private _removeOutputFile(file: URL, outDir: URL): void {
+    fs.rmSync(file, { force: true });
 
-function removeOutputFile(file: URL, outDir: URL): void {
-  fs.rmSync(file, { force: true });
-
-  // drop the folders left empty, e.g. `about/` once `about/index.html` is gone
-  let folder = new URL("./", file);
-  while (folder.href.startsWith(outDir.href) && folder.href !== outDir.href) {
-    // already gone when an earlier integration's `astro:build:done` did the cleanup
-    if (fs.existsSync(folder)) {
-      if (fs.readdirSync(folder).length > 0) return;
-      fs.rmdirSync(folder);
+    // drop the folders left empty, e.g. `about/` once `about/index.html` is gone
+    let folder = new URL("./", file);
+    while (folder.href.startsWith(outDir.href) && folder.href !== outDir.href) {
+      try {
+        // try to remove the folder, will fail if it's not empty
+        // this is better than checking if the folder is empty before attempting
+        // to remove it, because `readdirSync` would need to read every entry in
+        // the folder which becomes expensive for large directories
+        fs.rmdirSync(folder);
+      } catch (error) {
+        const { code } = error as NodeJS.ErrnoException;
+        // still holds other files (POSIX allows either code)
+        if (code === "ENOTEMPTY" || code === "EEXIST") return;
+        // directory already gone — could happen if it was deleted by another integration
+        if (code !== "ENOENT") throw error;
+      }
+      folder = new URL("../", folder);
     }
-    folder = new URL("../", folder);
   }
 }
