@@ -90,7 +90,7 @@ export default function routingInternational<Locales extends string>(
           if (isErrorPage && !errorPagePatterns.has(basePattern)) continue;
 
           // root error pages should always be kept as Astro needs them as fallback routes
-          let keepOriginal = isErrorPage || !resolvedOptions.removeOriginalPageRoutes.enabled;
+          let keepOriginal = isErrorPage || !resolvedOptions.removeOriginalPageRoutes;
 
           for (const locale of resolvedOptions.locales) {
             let localizedPattern: string | undefined =
@@ -169,7 +169,7 @@ export default function routingInternational<Locales extends string>(
         }
 
         const hasLocalizedErrorPages = Object.keys(localizedErrorPages).length > 0;
-        if (!resolvedOptions.removeOriginalPageRoutes.enabled && !hasLocalizedErrorPages) return;
+        if (!resolvedOptions.removeOriginalPageRoutes && !hasLocalizedErrorPages) return;
 
         updateConfig({
           vite: {
@@ -207,8 +207,7 @@ export default function routingInternational<Locales extends string>(
         resolvedRoutes = routes;
       },
       "astro:config:done": async ({ config, logger }) => {
-        if (!resolvedOptions.removeOriginalPageRoutes.enabled && routePatternsToUnlist.size === 0)
-          return;
+        if (!resolvedOptions.removeOriginalPageRoutes && routePatternsToUnlist.size === 0) return;
 
         const isListedRoute = (route: IntegrationResolvedRoute) =>
           !routePatternsToHide.has(route.pattern) && !routePatternsToUnlist.has(route.pattern);
@@ -217,7 +216,7 @@ export default function routingInternational<Locales extends string>(
         for (const integration of config.integrations) {
           if (
             integration.name === INTEGRATION_NAME ||
-            resolvedOptions.removeOriginalPageRoutes.excludedIntegrations?.includes(
+            resolvedOptions.crossIntegrationBehavior.excludedIntegrations?.includes(
               integration.name,
             )
           )
@@ -249,7 +248,7 @@ export default function routingInternational<Locales extends string>(
         }
       },
       "astro:build:done": (params) => {
-        if (!resolvedOptions.removeOriginalPageRoutes.enabled) return;
+        if (!resolvedOptions.removeOriginalPageRoutes) return;
         buildCleaner.filterBuild(params, routePatternsToHide, routePatternsToUnlist);
       },
     },

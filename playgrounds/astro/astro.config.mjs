@@ -42,7 +42,7 @@ export default defineConfig({
         }
         return "error";
       },
-      removeOriginalPageRoutes: { enabled: true },
+      removeOriginalPageRoutes: true,
     }),
   ],
 });
