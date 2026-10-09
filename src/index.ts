@@ -194,7 +194,8 @@ export default function routingInternational<Locales extends string>(
 
         addMiddleware({
           entrypoint: new URL("./middleware.mjs", import.meta.url),
-          order: "pre",
+          // run after the user's middleware to give them flexibility with scenarios like auth or redirects
+          order: "post",
         });
       },
       // render the localized error pages on demand in server output, because a prerendered error
