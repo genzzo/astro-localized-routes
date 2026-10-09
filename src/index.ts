@@ -7,18 +7,17 @@ import fs from "fs";
 import {
   ASTRO_ROUTE_EXTENSIONS,
   ClaimedPatternsChecker,
-  isErrorPagePattern,
   isRootPattern,
   pageFileToPattern,
 } from "./pattern";
 import { BuildCleaner } from "./build";
 import { virtualModuleTypes } from "./codegen";
 import type { ErrorPageStatus } from "./types";
-import { VIRTUAL_ID } from "./constants";
+import { RESOLVED_INTERNAL_ID, VIRTUAL_ID, VIRTUAL_INTERNAL_ID } from "./constants";
+import { isRootErrorPage } from "./utils";
 
 const INTEGRATION_NAME = "astro-localized-routes";
-const VIRTUAL_INTERNAL_ID = "astro-localized-routes:internal:virtual";
-const RESOLVED_INTERNAL_ID = `\0${VIRTUAL_INTERNAL_ID}`;
+const LOCALE_MODULE_PATH = fileURLToPath(new URL("./locale.mjs", import.meta.url));
 
 export default function localizedRoutes<Locales extends string>(
   options: AstroLocalizedRoutesOptions<Locales>,
@@ -90,7 +89,7 @@ export default function localizedRoutes<Locales extends string>(
           // route ignored by Astro's routing system (e.g. `_filename.astro`)
           if (basePattern === null) continue;
 
-          const isErrorPage = isErrorPagePattern(basePattern);
+          const isErrorPage = isRootErrorPage(basePattern);
           // skip error pages that are not listed in `errorPages`
           if (isErrorPage && !errorPagePatterns.has(basePattern)) continue;
 
@@ -135,7 +134,7 @@ export default function localizedRoutes<Locales extends string>(
             }
 
             // only the error pages themselves can use an error page path (e.g. `/404`)
-            if (!isErrorPage && isErrorPagePattern(localizedPattern)) {
+            if (!isErrorPage && isRootErrorPage(localizedPattern)) {
               throw new Error(
                 `Localized patterns are not allowed to use error page paths: pattern "${localizedPattern}" for file "${file}" and locale "${locale}"`,
               );
@@ -182,9 +181,7 @@ export default function localizedRoutes<Locales extends string>(
                 name: VIRTUAL_INTERNAL_ID,
                 resolveId: (id) => {
                   if (id === VIRTUAL_INTERNAL_ID) return RESOLVED_INTERNAL_ID;
-                  // the public module is a real file that reads its data from the internal one
-                  if (id === VIRTUAL_ID)
-                    return fileURLToPath(new URL("./locale.mjs", import.meta.url));
+                  if (id === VIRTUAL_ID) return LOCALE_MODULE_PATH;
                   return null;
                 },
                 load(id) {

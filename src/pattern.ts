@@ -3,7 +3,6 @@
 
 import path from "node:path";
 import type { RoutePart } from "astro";
-import type { ErrorPageStatus } from "./types";
 
 const ROUTE_DYNAMIC_SPLIT = /\[(.+?\(.+?\)|.+?)\]/;
 const ROUTE_SPREAD = /^\.{3}.+$/;
@@ -188,8 +187,4 @@ export function normalizePattern(pattern: string): string {
 
 export function isRootPattern(pattern: string): boolean {
   return pattern === "/";
-}
-
-export function isErrorPagePattern(pattern: string): pattern is `/${ErrorPageStatus}` {
-  return pattern === "/404" || pattern === "/500";
 }
