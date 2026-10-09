@@ -3,6 +3,7 @@
 
 import path from "node:path";
 import type { RoutePart } from "astro";
+import type { ErrorPageStatus } from "./types";
 
 const ROUTE_DYNAMIC_SPLIT = /\[(.+?\(.+?\)|.+?)\]/;
 const ROUTE_SPREAD = /^\.{3}.+$/;
@@ -127,4 +128,62 @@ export function pageFileToPattern(file: string): string | null {
   const segments = getSegmentsFromPageFile(file);
   if (segments === null) return null;
   return segmentsToPattern(segments);
+}
+
+// Additional utilities
+
+export const ASTRO_ROUTE_EXTENSIONS = [
+  ".astro",
+  ".html",
+  ".mdx",
+  ".mdoc",
+  ".js",
+  ".ts",
+  ".md",
+  ".markdown",
+  ".mdown",
+  ".mkdn",
+  ".mkd",
+  ".mdwn",
+];
+
+export namespace ClaimedPatternsChecker {
+  export type Claim = { pattern: string; file: string; locale?: string };
+  export type ClaimResult = { claimed: true } | { claimed: false; existing: Claim };
+}
+export class ClaimedPatternsChecker {
+  private claimedPatterns: Map<string, ClaimedPatternsChecker.Claim>;
+
+  static shape(pattern: string): string {
+    return pattern.replace(/\[(\.\.\.)?[^\]]+\]/g, "[$1]"); // /blog/[slug] -> /blog/[], [...x] -> [...]
+  }
+
+  constructor() {
+    this.claimedPatterns = new Map();
+  }
+
+  collectFromPageFiles(pageFiles: string[]) {
+    for (const file of pageFiles) {
+      const pattern = pageFileToPattern(file);
+      if (pattern !== null)
+        this.claimedPatterns.set(ClaimedPatternsChecker.shape(pattern), { pattern, file });
+    }
+  }
+
+  tryClaim(pattern: string, file: string, locale?: string): ClaimedPatternsChecker.ClaimResult {
+    const key = ClaimedPatternsChecker.shape(pattern);
+    const existing = this.claimedPatterns.get(key);
+    if (existing) return { claimed: false, existing };
+
+    this.claimedPatterns.set(key, { pattern, file, locale });
+    return { claimed: true };
+  }
+}
+
+export function isRootPattern(pattern: string): boolean {
+  return pattern === "/";
+}
+
+export function isErrorPagePattern(pattern: string): pattern is `/${ErrorPageStatus}` {
+  return pattern === "/404" || pattern === "/500";
 }

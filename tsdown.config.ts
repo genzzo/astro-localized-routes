@@ -1,10 +1,11 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  dts: {
-    tsgo: true,
+  entry: ["src/index.ts", "src/middleware.ts"],
+  deps: { neverBundle: ["astro-routing-international:internal:virtual"] },
+  dts: { tsgo: true },
+  exports: {
+    exclude: ["middleware"],
   },
-  exports: true,
   tsconfig: "./tsconfig.build.json",
-  // ...config options
 });

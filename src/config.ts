@@ -1,6 +1,18 @@
-import type { RoutableExtensions } from "./types";
+import type { ErrorPageStatus, RoutableExtensions } from "./types";
 
 type MissingRouteBehavior = "error" | "warn" | "use_default" | "ignore";
+
+type AstroCrossIntegrationBehaviorOptions = {
+  /**
+   * An opt-out mechanism for integrations that require having the original page routes
+   * as they were originally, and the localized error pages.
+   *
+   * **Important: files corresponding to the removed routes will be deleted regardless.**
+   * If the excluded integration needs the files as well, it should be placed as the first
+   * integration in the Astro configuration.
+   */
+  excludedIntegrations?: string[];
+};
 
 export interface AstroRoutingInternationalOptions<Locales extends string = string> {
   /**
@@ -21,6 +33,9 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
   /**
    * The routing table map.
    *
+   * Error pages (`/404` and `/500`) are not configured here, see
+   * {@link AstroRoutingInternationalOptions.errorPages errorPages}.
+   *
    * @example
    * ```ts
    * routes: {
@@ -31,6 +46,24 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    * ```
    */
   routes: Partial<Record<string, Partial<Record<NoInfer<Locales>, string>>>>;
+  /**
+   * Error pages to localize with every locale getting a copy of the error page under it
+   * (e.g. `/en/404`). The path of an error page can't be translated, because the middleware
+   * and static hosts expect it at `/{locale}/404`. The root error pages are always
+   * kept, and are used for errors outside any locale prefix.
+   *
+   * In server output, localized error pages are always rendered on demand, because a prerendered
+   * error page is served as a static file without going through the middleware. In static output
+   * with an adapter, add `export const prerender = false` to the error page to get the same.
+   *
+   * Like the root error pages, the localized ones are not meant to be listed, so other
+   * integrations don't get them in their routes and pages (e.g. `@astrojs/sitemap` doesn't
+   * list `/en/404`), except for the
+   * {@link AstroCrossIntegrationBehaviorOptions.excludedIntegrations excluded integrations}.
+   *
+   * @default [404, 500]
+   */
+  errorPages?: ErrorPageStatus[];
   /**
    * Behavior when a route is missing for a locale.
    *
@@ -56,7 +89,9 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    */
   routableExtensions?: [RoutableExtensions, ...RoutableExtensions[]];
   /**
-   * Remove the original routes coming from the `/pages` directory.
+   * Remove the original routes coming from the `/pages` directory. **This applies the
+   * removal to all other integrations, see
+   * {@link AstroRoutingInternationalOptions.crossIntegrationBehavior crossIntegrationBehavior}.**
    *
    * This is helpful for scenarios where the default locale is a different language
    * from what might be used to name the route in development. For example, if the
@@ -69,6 +104,22 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    * @default false
    */
   removeOriginalPageRoutes?: boolean;
+  /**
+   * How our routing applies to other integrations.
+   *
+   * Astro builds a fresh set of routes and pages for every integration, meaning routes
+   * that are hidden will not be removed for other integrations. For example,
+   * `@astrojs/sitemap` will generate a sitemap which includes all routes, including
+   * those that are supposed to be removed when `removeOriginalPageRoutes` is enabled.
+   *
+   * Our integration wraps the `astro:routes:resolved` and `astro:build:done` hooks of other
+   * integrations, forcing the removal of the original page routes for those integrations
+   * as well. Localized error pages are left out the same way, see
+   * {@link AstroRoutingInternationalOptions.errorPages errorPages}.
+   *
+   * @default {}
+   */
+  crossIntegrationBehavior?: AstroCrossIntegrationBehaviorOptions;
 }
 
 interface AstroRoutingInternationalResolvedOptions<
@@ -87,8 +138,10 @@ export function resolveOptions<Locales extends string = string>(
       ...options.routes,
     },
     prefixDefaultLocale: options.prefixDefaultLocale ?? false,
+    errorPages: options.errorPages ?? [404, 500],
     missingRouteBehavior: options.missingRouteBehavior ?? "error",
     routableExtensions: options.routableExtensions ?? [".astro"],
     removeOriginalPageRoutes: options.removeOriginalPageRoutes ?? false,
+    crossIntegrationBehavior: options.crossIntegrationBehavior ?? {},
   };
 }
