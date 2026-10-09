@@ -93,7 +93,9 @@ const locale = getLocale(Astro); // "fr" | "en"
 </html>
 ```
 
-Each localized route returns its own locale, including the localized error pages. An error page rendered on demand returns the locale of the requested path (for example, `en` for `/en/missing`). Any other route returns the locale its path starts with, or the default locale.
+Each localized route returns its own locale, including the localized error pages. The root error pages and any other route return the locale the requested path starts with, or the default locale (for example, `en` for `/en/missing`, even after a rewrite to `/404`, or for `/en/rss.xml` served by `[lang]/rss.xml.ts`). Server islands and actions return the locale of the page that called them.
+
+This integration doesn't use Astro's `i18n` config, so `Astro.currentLocale` is `undefined` and the `astro:i18n` module can't be used. Use `getLocale` instead.
 
 The module also exports `locales`, `defaultLocale` and the `Locale` type. They are typed from your config once `astro dev`, `astro build` or `astro sync` has run.
 
