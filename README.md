@@ -79,15 +79,23 @@ Since `removeOriginalPageRoutes` is enabled, the original `/about` and `/blog/[s
 
 Each page needs a path for every locale in `routes`, except `/`, which defaults to `/` for every locale. If a locale does not have a path, `missingRouteBehavior` controls how it is handled.
 
-`Astro.currentLocale` is not set by this integration. To determine the locale, read it from the route pattern:
+### Getting the locale
 
 ```astro
 ---
-// Working on this in the next iteration
-const [, prefix] = Astro.routePattern.split("/");
-const locale = prefix === "en" ? "en" : "fr";
+import { getLocale } from "virtual:astro-localized-routes";
+
+const locale = getLocale(Astro); // "fr" | "en"
 ---
+
+<html lang={locale}>
+  <!-- ... -->
+</html>
 ```
+
+Each localized route returns its own locale, including the localized error pages. An error page rendered on demand returns the locale of the requested path (for example, `en` for `/en/missing`). Any other route returns the locale its path starts with, or the default locale.
+
+The module also exports `locales`, `defaultLocale` and the `Locale` type. They are typed from your config once `astro dev`, `astro build` or `astro sync` has run.
 
 ## Options
 
