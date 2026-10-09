@@ -1,3 +1,4 @@
+import { normalizePattern } from "./pattern";
 import type { ErrorPageStatus, RoutableExtensions } from "./types";
 
 type MissingRouteBehavior = "error" | "warn" | "use_default" | "ignore";
@@ -131,12 +132,12 @@ export function resolveOptions<Locales extends string = string>(
 ): AstroLocalizedRoutesResolvedOptions<Locales> {
   return {
     ...options,
-    routes: {
+    routes: normalizeRoutes({
       "/": Object.fromEntries(options.locales.map((locale) => [locale, "/"])) as Partial<
         Record<NoInfer<Locales>, string>
       >,
       ...options.routes,
-    },
+    }),
     prefixDefaultLocale: options.prefixDefaultLocale ?? false,
     errorPages: options.errorPages ?? [404, 500],
     missingRouteBehavior: options.missingRouteBehavior ?? "error",
@@ -144,4 +145,21 @@ export function resolveOptions<Locales extends string = string>(
     removeOriginalPageRoutes: options.removeOriginalPageRoutes ?? false,
     crossIntegrationBehavior: options.crossIntegrationBehavior ?? {},
   };
+}
+
+// normalize page keys and their paths, so that `/about/` matches the page `/about`
+function normalizeRoutes<Locales extends string>(
+  routes: AstroLocalizedRoutesOptions<Locales>["routes"],
+): AstroLocalizedRoutesOptions<Locales>["routes"] {
+  const normalizedRoutes: AstroLocalizedRoutesOptions<Locales>["routes"] = {};
+  for (const [page, paths] of Object.entries(routes)) {
+    if (paths === undefined) continue;
+    const normalizedPaths: Partial<Record<Locales, string>> = {};
+    for (const locale of Object.keys(paths) as Locales[]) {
+      const path = paths[locale];
+      if (path !== undefined) normalizedPaths[locale] = normalizePattern(path);
+    }
+    normalizedRoutes[normalizePattern(page)] = normalizedPaths;
+  }
+  return normalizedRoutes;
 }

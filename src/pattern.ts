@@ -180,6 +180,12 @@ export class ClaimedPatternsChecker {
   }
 }
 
+// Astro reports patterns without trailing or doubled slashes (e.g. `/a-propos/` and `//a-propos`
+// are both `/a-propos`), so configured paths need the same shape to be compared with them
+export function normalizePattern(pattern: string): string {
+  return `/${pattern.split("/").filter(Boolean).join("/")}`;
+}
+
 export function isRootPattern(pattern: string): boolean {
   return pattern === "/";
 }
