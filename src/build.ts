@@ -12,7 +12,7 @@ export class BuildCleaner {
     routePatternsToUnlist: ReadonlySet<string>,
   ): Pick<BuildDoneParams, "pages" | "assets"> {
     const visiblePathnames = new Set<string>();
-    // listed pathnames keep their asset files but their pages are hidden from the final `pages` list
+    // unlisted routes keep their files but they're left out of `pages` so that they don't appear to other integrations
     const listedPathnames = new Set<string>();
 
     for (const [pattern, files] of assets) {
