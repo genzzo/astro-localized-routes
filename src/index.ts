@@ -202,6 +202,9 @@ export default function localizedRoutes<Locales extends string>(
                 },
               },
             ],
+            // the public module resolves into `node_modules`, so Vite would pre-bundle it for the
+            // browser, but the pre-bundler doesn't run our plugin to resolve the internal module
+            optimizeDeps: { exclude: [VIRTUAL_ID] },
           },
         });
 
