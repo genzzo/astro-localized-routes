@@ -6,15 +6,22 @@ type BuildDoneParams = Parameters<NonNullable<AstroIntegration["hooks"]["astro:b
 export class BuildCleaner {
   private hasCleanedBuildFiles = false;
 
-  removeHiddenRoutesFromBuild(
+  filterBuild(
     { pages, assets, dir }: BuildDoneParams,
     routePatternsToHide: ReadonlySet<string>,
+    routePatternsToUnlist: ReadonlySet<string>,
   ): Pick<BuildDoneParams, "pages" | "assets"> {
     const visiblePathnames = new Set<string>();
+    // listed pathnames keep their asset files but their pages are hidden from the final `pages` list
+    const listedPathnames = new Set<string>();
 
     for (const [pattern, files] of assets) {
       if (routePatternsToHide.has(pattern)) continue;
-      for (const file of files) visiblePathnames.add(this._outputFileToPathname(file, dir));
+      for (const file of files) {
+        const pathname = this._outputFileToPathname(file, dir);
+        visiblePathnames.add(pathname);
+        if (!routePatternsToUnlist.has(pattern)) listedPathnames.add(pathname);
+      }
     }
 
     if (!this.hasCleanedBuildFiles) {
@@ -32,8 +39,7 @@ export class BuildCleaner {
     }
 
     return {
-      // `pages` lists every rendered pathname, the hidden ones included
-      pages: pages.filter((page) => visiblePathnames.has(page.pathname.replace(/\/$/, ""))),
+      pages: pages.filter((page) => listedPathnames.has(page.pathname.replace(/\/$/, ""))),
       assets: new Map([...assets].filter(([pattern]) => !routePatternsToHide.has(pattern))),
     };
   }

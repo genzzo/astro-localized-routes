@@ -15,12 +15,13 @@ type AstroRemoveOriginalPageRoutesOptions = {
    * `@astrojs/sitemap` will generate a sitemap which includes all routes, including
    * those that are supposed to be removed when `enabled` is set to `true`.
    *
-   * Our integration applies a build wrapper on every `astro:build:done` of other
-   * integrations, forcing the removal of the original page routes for those
-   * integrations as well.
+   * Our integration wraps the `astro:routes:resolved` and `astro:build:done` hooks of other
+   * integrations, forcing the removal of the original page routes for those integrations
+   * as well. The localized error pages are left out the same way, see
+   * {@link AstroRoutingInternationalOptions.errorPages errorPages}.
    *
    * This option provides an opt-out mechanism for integrations that require having the
-   * original page routes as they were originally.
+   * original page routes as they were originally, and the localized error pages.
    *
    * **Important: files corresponding to the removed routes will be deleted regardless.**
    * If the excluded integration needs the files as well, it should be placed as the first
@@ -70,6 +71,11 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    * In server output, localized error pages are always rendered on demand, because a prerendered
    * error page is served as a static file without going through the middleware. In static output
    * with an adapter, add `export const prerender = false` to the error page to get the same.
+   *
+   * Like the root error pages, the localized ones are not meant to be listed, so other
+   * integrations don't get them in their routes and pages (e.g. `@astrojs/sitemap` doesn't
+   * list `/en/404`), except for the
+   * {@link AstroRemoveOriginalPageRoutesOptions.excludedIntegrations excluded integrations}.
    *
    * @default [404, 500]
    */

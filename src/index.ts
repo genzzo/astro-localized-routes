@@ -1,4 +1,4 @@
-import type { AstroIntegration } from "astro";
+import type { AstroIntegration, IntegrationResolvedRoute } from "astro";
 import type { AstroRoutingInternationalOptions } from "./config";
 import { resolveOptions } from "./config";
 import { fileURLToPath } from "url";
@@ -26,6 +26,10 @@ export default function routingInternational<Locales extends string>(
   let isServerOutput = false;
 
   const routePatternsToHide: Set<string> = new Set();
+  // routes that are served but kept out of what other integrations see (e.g. `/en/404` in a sitemap)
+  const routePatternsToUnlist: Set<string> = new Set();
+  // the routes Astro resolved, which builds resolve before "astro:config:done"
+  let resolvedRoutes: IntegrationResolvedRoute[] | undefined;
 
   let localizedErrorPages: Partial<
     Record<`/${ErrorPageStatus}`, Partial<Record<Locales, string>>>
@@ -40,6 +44,8 @@ export default function routingInternational<Locales extends string>(
   // clean up the previous state after Astro's config changes or the server reloads or consecutive builds
   const resetState = () => {
     routePatternsToHide.clear();
+    routePatternsToUnlist.clear();
+    resolvedRoutes = undefined;
     localizedErrorPages = {};
     errorPageComponents.clear();
     buildCleaner.resetCleanFlag();
@@ -147,6 +153,7 @@ export default function routingInternational<Locales extends string>(
             if (isErrorPage) {
               if (!localizedErrorPages[basePattern]) localizedErrorPages[basePattern] = {};
               localizedErrorPages[basePattern][locale] = localizedPattern;
+              routePatternsToUnlist.add(localizedPattern);
               errorPageComponents.add(
                 path
                   .relative(fileURLToPath(astroConfig.root), path.join(pagesDir, file))
@@ -195,31 +202,54 @@ export default function routingInternational<Locales extends string>(
       "astro:route:setup": ({ route }) => {
         if (isServerOutput && errorPageComponents.has(route.component)) route.prerender = false;
       },
-      "astro:config:done": ({ config }) => {
-        if (!resolvedOptions.removeOriginalPageRoutes.enabled) return;
+      "astro:routes:resolved": ({ routes }) => {
+        resolvedRoutes = routes;
+      },
+      "astro:config:done": async ({ config, logger }) => {
+        if (!resolvedOptions.removeOriginalPageRoutes.enabled && routePatternsToUnlist.size === 0)
+          return;
 
-        // wrap other integrations' build done hooks to remove hidden routes
+        const isListedRoute = (route: IntegrationResolvedRoute) =>
+          !routePatternsToHide.has(route.pattern) && !routePatternsToUnlist.has(route.pattern);
+
+        // wrap other integrations' hooks to remove hidden routes and unlisted routes
         for (const integration of config.integrations) {
-          const buildDone = integration.hooks["astro:build:done"];
           if (
             integration.name === INTEGRATION_NAME ||
             resolvedOptions.removeOriginalPageRoutes.excludedIntegrations?.includes(
               integration.name,
-            ) ||
-            buildDone === undefined
+            )
           )
             continue;
 
-          integration.hooks["astro:build:done"] = (params) =>
-            buildDone({
-              ...params,
-              ...buildCleaner.removeHiddenRoutesFromBuild(params, routePatternsToHide),
-            });
+          const buildDone = integration.hooks["astro:build:done"];
+          if (buildDone !== undefined) {
+            integration.hooks["astro:build:done"] = (params) =>
+              buildDone({
+                ...params,
+                ...buildCleaner.filterBuild(params, routePatternsToHide, routePatternsToUnlist),
+              });
+          }
+
+          const routesResolved = integration.hooks["astro:routes:resolved"];
+          if (routesResolved !== undefined) {
+            const filteredRoutesResolved: typeof routesResolved = (params) =>
+              routesResolved({ ...params, routes: params.routes.filter(isListedRoute) });
+            integration.hooks["astro:routes:resolved"] = filteredRoutesResolved;
+
+            // builds resolve the routes before "astro:config:done" while dev does it after, so the
+            // integration already got all of them and we need to call its hook again
+            if (resolvedRoutes !== undefined)
+              await filteredRoutesResolved({
+                routes: resolvedRoutes,
+                logger: logger.fork(integration.name),
+              });
+          }
         }
       },
       "astro:build:done": (params) => {
         if (!resolvedOptions.removeOriginalPageRoutes.enabled) return;
-        buildCleaner.removeHiddenRoutesFromBuild(params, routePatternsToHide);
+        buildCleaner.filterBuild(params, routePatternsToHide, routePatternsToUnlist);
       },
     },
   };
