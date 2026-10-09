@@ -1,7 +1,7 @@
 {
   "name": "astro-localized-routes",
   "version": "0.1.0",
-  "description": "A better version of Astro's i18n routing.",
+  "description": "The way Astro should be handling i18n in the first place.",
   "keywords": [
     "astro",
     "astro-integration",

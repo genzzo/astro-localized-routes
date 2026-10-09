@@ -1,6 +1,6 @@
 # astro-localized-routes
 
-The way Astro should be handling localized routes in the first place.
+The way Astro should be handling i18n in the first place.
 
 Aside from configuring the plugin in your config Astro config file, all you need to do is define your pages normally in `src/pages`, and that's it.
 
