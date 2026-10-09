@@ -48,7 +48,7 @@ importers:
       '@astrojs/check':
         specifier: ^0.9.10
         version: 0.9.10(prettier-plugin-astro@1.0.0(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(prettier@3.9.6))(prettier@3.9.6)(typescript@6.0.3)
-      astro-routing-international:
+      astro-localized-routes:
         specifier: workspace:*
         version: link:../..
       typescript:
@@ -64,7 +64,7 @@ importers:
       '@astrojs/check':
         specifier: ^0.9.10
         version: 0.9.10(prettier-plugin-astro@1.0.0(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(prettier@3.9.6))(prettier@3.9.6)(typescript@6.0.3)
-      astro-routing-international:
+      astro-localized-routes:
         specifier: workspace:*
         version: link:../..
       typescript:

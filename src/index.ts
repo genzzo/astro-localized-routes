@@ -1,5 +1,5 @@
 import type { AstroIntegration, IntegrationResolvedRoute } from "astro";
-import type { AstroRoutingInternationalOptions } from "./config";
+import type { AstroLocalizedRoutesOptions } from "./config";
 import { resolveOptions } from "./config";
 import { fileURLToPath } from "url";
 import path from "path";
@@ -14,12 +14,12 @@ import {
 import { BuildCleaner } from "./build";
 import type { ErrorPageStatus } from "./types";
 
-const INTEGRATION_NAME = "astro-routing-international";
-const VIRTUAL_INTERNAL_ID = "astro-routing-international:internal:virtual";
+const INTEGRATION_NAME = "astro-localized-routes";
+const VIRTUAL_INTERNAL_ID = "astro-localized-routes:internal:virtual";
 const RESOLVED_INTERNAL_ID = `\0${VIRTUAL_INTERNAL_ID}`;
 
-export default function routingInternational<Locales extends string>(
-  options: AstroRoutingInternationalOptions<Locales>,
+export default function localizedRoutes<Locales extends string>(
+  options: AstroLocalizedRoutesOptions<Locales>,
 ): AstroIntegration {
   const resolvedOptions = resolveOptions(options);
 

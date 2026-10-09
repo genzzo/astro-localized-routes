@@ -1,5 +1,5 @@
 {
-  "name": "astro-routing-international",
+  "name": "astro-localized-routes",
   "version": "0.0.0",
   "description": "A better version of Astro's i18n routing.",
   "keywords": [
@@ -10,15 +10,15 @@
     "pages",
     "routing"
   ],
-  "homepage": "https://github.com/genzzo/astro-routing-international#readme",
+  "homepage": "https://github.com/genzzo/astro-localized-routes#readme",
   "bugs": {
-    "url": "https://github.com/genzzo/astro-routing-international/issues"
+    "url": "https://github.com/genzzo/astro-localized-routes/issues"
   },
   "license": "MIT",
   "author": "genzzo",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/genzzo/astro-routing-international.git"
+    "url": "git+https://github.com/genzzo/astro-localized-routes.git"
   },
   "files": [
     "dist"

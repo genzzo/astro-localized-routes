@@ -14,7 +14,7 @@ type AstroCrossIntegrationBehaviorOptions = {
   excludedIntegrations?: string[];
 };
 
-export interface AstroRoutingInternationalOptions<Locales extends string = string> {
+export interface AstroLocalizedRoutesOptions<Locales extends string = string> {
   /**
    * All supported locales for the site.
    */
@@ -34,7 +34,7 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    * The routing table map.
    *
    * Error pages (`/404` and `/500`) are not configured here, see
-   * {@link AstroRoutingInternationalOptions.errorPages errorPages}.
+   * {@link AstroLocalizedRoutesOptions.errorPages errorPages}.
    *
    * @example
    * ```ts
@@ -91,7 +91,7 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
   /**
    * Remove the original routes coming from the `/pages` directory. **This applies the
    * removal to all other integrations, see
-   * {@link AstroRoutingInternationalOptions.crossIntegrationBehavior crossIntegrationBehavior}.**
+   * {@link AstroLocalizedRoutesOptions.crossIntegrationBehavior crossIntegrationBehavior}.**
    *
    * This is helpful for scenarios where the default locale is a different language
    * from what might be used to name the route in development. For example, if the
@@ -115,20 +115,20 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    * Our integration wraps the `astro:routes:resolved` and `astro:build:done` hooks of other
    * integrations, forcing the removal of the original page routes for those integrations
    * as well. Localized error pages are left out the same way, see
-   * {@link AstroRoutingInternationalOptions.errorPages errorPages}.
+   * {@link AstroLocalizedRoutesOptions.errorPages errorPages}.
    *
    * @default {}
    */
   crossIntegrationBehavior?: AstroCrossIntegrationBehaviorOptions;
 }
 
-interface AstroRoutingInternationalResolvedOptions<
-  Locales extends string = string,
-> extends Required<AstroRoutingInternationalOptions<Locales>> {}
+interface AstroLocalizedRoutesResolvedOptions<Locales extends string = string> extends Required<
+  AstroLocalizedRoutesOptions<Locales>
+> {}
 
 export function resolveOptions<Locales extends string = string>(
-  options: AstroRoutingInternationalOptions<Locales>,
-): AstroRoutingInternationalResolvedOptions<Locales> {
+  options: AstroLocalizedRoutesOptions<Locales>,
+): AstroLocalizedRoutesResolvedOptions<Locales> {
   return {
     ...options,
     routes: {

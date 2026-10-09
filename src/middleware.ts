@@ -5,7 +5,7 @@ import {
   localizedErrorPages,
   routePatternsToHide,
   trailingSlash,
-} from "astro-routing-international:internal:virtual";
+} from "astro-localized-routes:internal:virtual";
 
 // status and localized copies of each error page (e.g. `/404` -> 404 with `en` -> `/en/404`)
 const errorPagesMap = new Map(

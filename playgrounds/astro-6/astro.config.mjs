@@ -1,6 +1,6 @@
 // @ts-check
 import { defineConfig } from "astro/config";
-import routingInternational from "astro-routing-international";
+import localizedRoutes from "astro-localized-routes";
 
 const defaultLocale = "fr";
 
@@ -26,7 +26,7 @@ export default defineConfig({
   srcDir: "../site/src",
   publicDir: "../site/public",
   integrations: [
-    routingInternational({
+    localizedRoutes({
       locales: ["en", "fr", "de"],
       defaultLocale: defaultLocale,
       routes: routesMap,

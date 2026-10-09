@@ -1,5 +1,5 @@
 import type { AstroIntegration } from "astro";
-import type { AstroRoutingInternationalOptions } from "./config";
+import type { AstroLocalizedRoutesOptions } from "./config";
 import { resolveOptions } from "./config";
 import { fileURLToPath } from "url";
 import path from "path";
@@ -7,8 +7,8 @@ import fs from "fs";
 import os from "os";
 import { pageFileToPattern } from "./pattern";
 
-export default function routingInternational<Locales extends string>(
-  options: AstroRoutingInternationalOptions<Locales>,
+export default function localizedRoutes<Locales extends string>(
+  options: AstroLocalizedRoutesOptions<Locales>,
 ): AstroIntegration {
   const resolvedOptions = resolveOptions(options);
 
@@ -38,7 +38,7 @@ export default function routingInternational<Locales extends string>(
   };
 
   return {
-    name: "astro-routing-international",
+    name: "astro-localized-routes",
     hooks: {
       "astro:config:setup": ({ config: astroConfig, injectRoute }) => {
         // a dev-server restart re-runs this hook; drop the previous run's shims first
@@ -59,7 +59,7 @@ export default function routingInternational<Locales extends string>(
           let entrypoint = path.join(pagesDir, file);
           if (!file.endsWith(".astro")) {
             // created on demand so a project with only `.astro` pages never touches the fs
-            shimDir ??= fs.mkdtempSync(path.join(os.tmpdir(), "astro-routing-international-"));
+            shimDir ??= fs.mkdtempSync(path.join(os.tmpdir(), "astro-localized-routes-"));
             // flatten the relative path (`writeFileSync` won't create parent dirs) and keep the
             // original extension so sibling pages like `index.md`/`index.html` can't collide
             const shimFile = `${file.replace(/[\\/]/g, "__")}.astro`;
