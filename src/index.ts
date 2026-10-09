@@ -12,7 +12,9 @@ import {
   pageFileToPattern,
 } from "./pattern";
 import { BuildCleaner } from "./build";
+import { virtualModuleTypes } from "./codegen";
 import type { ErrorPageStatus } from "./types";
+import { VIRTUAL_ID } from "./constants";
 
 const INTEGRATION_NAME = "astro-localized-routes";
 const VIRTUAL_INTERNAL_ID = "astro-localized-routes:internal:virtual";
@@ -30,6 +32,8 @@ export default function localizedRoutes<Locales extends string>(
   const routePatternsToUnlist: Set<string> = new Set();
   // the routes Astro resolved, which builds resolve before "astro:config:done"
   let resolvedRoutes: IntegrationResolvedRoute[] | undefined;
+  // the locale of each route we created, which `getLocale` reads (e.g. `/en/about` -> `en`)
+  const localeByRoutePattern: Map<string, Locales> = new Map();
 
   let localizedErrorPages: Partial<
     Record<`/${ErrorPageStatus}`, Partial<Record<Locales, string>>>
@@ -46,6 +50,7 @@ export default function localizedRoutes<Locales extends string>(
     routePatternsToHide.clear();
     routePatternsToUnlist.clear();
     resolvedRoutes = undefined;
+    localeByRoutePattern.clear();
     localizedErrorPages = {};
     errorPageComponents.clear();
     buildCleaner.resetCleanFlag();
@@ -136,6 +141,8 @@ export default function localizedRoutes<Locales extends string>(
               );
             }
 
+            localeByRoutePattern.set(localizedPattern, locale);
+
             if (localizedPattern === basePattern) {
               keepOriginal = true; // served by the page's own route
               continue;
@@ -168,20 +175,26 @@ export default function localizedRoutes<Locales extends string>(
           }
         }
 
-        const hasLocalizedErrorPages = Object.keys(localizedErrorPages).length > 0;
-        if (!resolvedOptions.removeOriginalPageRoutes && !hasLocalizedErrorPages) return;
-
         updateConfig({
           vite: {
             plugins: [
               {
                 name: VIRTUAL_INTERNAL_ID,
-                resolveId: (id) => (id === VIRTUAL_INTERNAL_ID ? RESOLVED_INTERNAL_ID : null),
+                resolveId: (id) => {
+                  if (id === VIRTUAL_INTERNAL_ID) return RESOLVED_INTERNAL_ID;
+                  // the public module is a real file that reads its data from the internal one
+                  if (id === VIRTUAL_ID)
+                    return fileURLToPath(new URL("./locale.mjs", import.meta.url));
+                  return null;
+                },
                 load(id) {
                   if (id !== RESOLVED_INTERNAL_ID) return null;
                   return [
                     `export const routePatternsToHide = new Set(${JSON.stringify(Array.from(routePatternsToHide))});`,
                     `export const localizedErrorPages = ${JSON.stringify(localizedErrorPages)};`,
+                    `export const locales = ${JSON.stringify(resolvedOptions.locales)};`,
+                    `export const defaultLocale = ${JSON.stringify(resolvedOptions.defaultLocale)};`,
+                    `export const localeByRoutePattern = new Map(${JSON.stringify(Array.from(localeByRoutePattern))});`,
                     `export const base = ${JSON.stringify(astroConfig.base.replace(/\/$/, ""))};`,
                     `export const trailingSlash = ${JSON.stringify(astroConfig.trailingSlash)};`,
                     `export const isDev = ${JSON.stringify(command === "dev")};`,
@@ -191,6 +204,9 @@ export default function localizedRoutes<Locales extends string>(
             ],
           },
         });
+
+        const hasLocalizedErrorPages = Object.keys(localizedErrorPages).length > 0;
+        if (!resolvedOptions.removeOriginalPageRoutes && !hasLocalizedErrorPages) return;
 
         addMiddleware({
           entrypoint: new URL("./middleware.mjs", import.meta.url),
@@ -206,7 +222,12 @@ export default function localizedRoutes<Locales extends string>(
       "astro:routes:resolved": ({ routes }) => {
         resolvedRoutes = routes;
       },
-      "astro:config:done": async ({ config, logger }) => {
+      "astro:config:done": async ({ config, logger, injectTypes }) => {
+        injectTypes({
+          filename: "types.d.ts",
+          content: virtualModuleTypes(resolvedOptions.locales, resolvedOptions.defaultLocale),
+        });
+
         if (!resolvedOptions.removeOriginalPageRoutes && routePatternsToUnlist.size === 0) return;
 
         const isListedRoute = (route: IntegrationResolvedRoute) =>
