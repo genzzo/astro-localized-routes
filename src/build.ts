@@ -18,10 +18,9 @@ export class BuildCleaner {
     }
 
     if (!this.hasCleanedBuildFiles) {
-      // Astro writes the pages rerouted to the 404 page through our middleware to a hidden
-      // route's files instead of skipping them. This would cause serving a 404 page with a
-      // 200 response instead of a 404, so we need to remove the actual build files and not
-      // just reroute them
+      // Astro writes the 404 responses of our middleware to a hidden route's files instead of
+      // skipping them. This would cause serving an empty page with a 200 response instead of
+      // a 404, so we need to remove the actual build files
       for (const pattern of routePatternsToHide) {
         for (const file of assets.get(pattern) ?? []) {
           if (!visiblePathnames.has(this._outputFileToPathname(file, dir)))

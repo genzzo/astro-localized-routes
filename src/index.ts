@@ -12,6 +12,7 @@ import {
   pageFileToPattern,
 } from "./pattern";
 import { BuildCleaner } from "./build";
+import type { ErrorPageStatus } from "./types";
 
 const INTEGRATION_NAME = "astro-routing-international";
 const VIRTUAL_INTERNAL_ID = "astro-routing-international:internal:virtual";
@@ -22,16 +23,41 @@ export default function routingInternational<Locales extends string>(
 ): AstroIntegration {
   const resolvedOptions = resolveOptions(options);
 
+  let isServerOutput = false;
+
   const routePatternsToHide: Set<string> = new Set();
 
+  let localizedErrorPages: Partial<
+    Record<`/${ErrorPageStatus}`, Partial<Record<Locales, string>>>
+  > = {};
+  const errorPagePatterns = new Set(resolvedOptions.errorPages.map((status) => `/${status}`));
+  // store the file paths of error page components because "astro:route:setup" does not
+  // see patterns and we need the actual component file to disable prerendering on them
+  const errorPageComponents: Set<string> = new Set();
+
   const buildCleaner = new BuildCleaner();
+
+  // clean up the previous state after Astro's config changes or the server reloads or consecutive builds
+  const resetState = () => {
+    routePatternsToHide.clear();
+    localizedErrorPages = {};
+    errorPageComponents.clear();
+    buildCleaner.resetCleanFlag();
+  };
 
   return {
     name: INTEGRATION_NAME,
     hooks: {
-      "astro:config:setup": ({ config: astroConfig, injectRoute, addMiddleware, updateConfig }) => {
-        routePatternsToHide.clear();
-        buildCleaner.resetCleanFlag();
+      "astro:config:setup": ({
+        config: astroConfig,
+        command,
+        injectRoute,
+        addMiddleware,
+        updateConfig,
+      }) => {
+        resetState();
+
+        isServerOutput = astroConfig.output === "server";
 
         const srcDir = fileURLToPath(astroConfig.srcDir);
         const pagesDir = path.join(srcDir, "pages");
@@ -53,13 +79,21 @@ export default function routingInternational<Locales extends string>(
           // route ignored by Astro's routing system (e.g. `_filename.astro`)
           if (basePattern === null) continue;
 
-          if (isErrorPagePattern(basePattern)) continue;
+          const isErrorPage = isErrorPagePattern(basePattern);
+          // skip error pages that are not listed in `errorPages`
+          if (isErrorPage && !errorPagePatterns.has(basePattern)) continue;
 
-          let keepOriginal = !resolvedOptions.removeOriginalPageRoutes.enabled;
+          // root error pages should always be kept as Astro needs them as fallback routes
+          let keepOriginal = isErrorPage || !resolvedOptions.removeOriginalPageRoutes.enabled;
 
           for (const locale of resolvedOptions.locales) {
             let localizedPattern: string | undefined =
               resolvedOptions.routes[basePattern]?.[locale];
+
+            // error pages keep their path under every locale (e.g. `/en/404`)
+            if (isErrorPage) {
+              localizedPattern = basePattern;
+            }
 
             if (localizedPattern === undefined) {
               const missingRouteBehavior =
@@ -89,6 +123,13 @@ export default function routingInternational<Locales extends string>(
                 : `/${locale}${localizedPattern}`;
             }
 
+            // only the error pages themselves can use an error page path (e.g. `/404`)
+            if (!isErrorPage && isErrorPagePattern(localizedPattern)) {
+              throw new Error(
+                `Localized patterns are not allowed to use error page paths: pattern "${localizedPattern}" for file "${file}" and locale "${locale}"`,
+              );
+            }
+
             if (localizedPattern === basePattern) {
               keepOriginal = true; // served by the page's own route
               continue;
@@ -102,6 +143,17 @@ export default function routingInternational<Locales extends string>(
               );
 
             injectRoute({ pattern: localizedPattern, entrypoint: path.join(pagesDir, file) });
+
+            if (isErrorPage) {
+              if (!localizedErrorPages[basePattern]) localizedErrorPages[basePattern] = {};
+              localizedErrorPages[basePattern][locale] = localizedPattern;
+              errorPageComponents.add(
+                path
+                  .relative(fileURLToPath(astroConfig.root), path.join(pagesDir, file))
+                  .split(path.sep)
+                  .join("/"),
+              );
+            }
           }
 
           if (!keepOriginal) {
@@ -109,7 +161,8 @@ export default function routingInternational<Locales extends string>(
           }
         }
 
-        if (!resolvedOptions.removeOriginalPageRoutes.enabled) return;
+        const hasLocalizedErrorPages = Object.keys(localizedErrorPages).length > 0;
+        if (!resolvedOptions.removeOriginalPageRoutes.enabled && !hasLocalizedErrorPages) return;
 
         updateConfig({
           vite: {
@@ -119,7 +172,13 @@ export default function routingInternational<Locales extends string>(
                 resolveId: (id) => (id === VIRTUAL_INTERNAL_ID ? RESOLVED_INTERNAL_ID : null),
                 load(id) {
                   if (id !== RESOLVED_INTERNAL_ID) return null;
-                  return `export const routePatternsToHide = new Set(${JSON.stringify(Array.from(routePatternsToHide))});`;
+                  return [
+                    `export const routePatternsToHide = new Set(${JSON.stringify(Array.from(routePatternsToHide))});`,
+                    `export const localizedErrorPages = ${JSON.stringify(localizedErrorPages)};`,
+                    `export const base = ${JSON.stringify(astroConfig.base.replace(/\/$/, ""))};`,
+                    `export const trailingSlash = ${JSON.stringify(astroConfig.trailingSlash)};`,
+                    `export const isDev = ${JSON.stringify(command === "dev")};`,
+                  ].join("\n");
                 },
               },
             ],
@@ -127,14 +186,19 @@ export default function routingInternational<Locales extends string>(
         });
 
         addMiddleware({
-          entrypoint: new URL("./remove-original-routes-middleware.mjs", import.meta.url),
+          entrypoint: new URL("./middleware.mjs", import.meta.url),
           order: "pre",
         });
+      },
+      // render the localized error pages on demand in server output, because a prerendered error
+      // page is served as a static file without going through our middleware
+      "astro:route:setup": ({ route }) => {
+        if (isServerOutput && errorPageComponents.has(route.component)) route.prerender = false;
       },
       "astro:config:done": ({ config }) => {
         if (!resolvedOptions.removeOriginalPageRoutes.enabled) return;
 
-        // Wrap other integrations' build done hooks to remove hidden routes
+        // wrap other integrations' build done hooks to remove hidden routes
         for (const integration of config.integrations) {
           const buildDone = integration.hooks["astro:build:done"];
           if (

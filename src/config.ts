@@ -1,4 +1,4 @@
-import type { RoutableExtensions } from "./types";
+import type { ErrorPageStatus, RoutableExtensions } from "./types";
 
 type MissingRouteBehavior = "error" | "warn" | "use_default" | "ignore";
 
@@ -48,6 +48,9 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
   /**
    * The routing table map.
    *
+   * Error pages (`/404` and `/500`) are not configured here, see
+   * {@link AstroRoutingInternationalOptions.errorPages errorPages}.
+   *
    * @example
    * ```ts
    * routes: {
@@ -58,6 +61,19 @@ export interface AstroRoutingInternationalOptions<Locales extends string = strin
    * ```
    */
   routes: Partial<Record<string, Partial<Record<NoInfer<Locales>, string>>>>;
+  /**
+   * Error pages to localize with every locale getting a copy of the error page under it
+   * (e.g. `/en/404`). The path of an error page can't be translated, because the middleware
+   * and static hosts expect it at `/{locale}/404`. The root error pages are always
+   * kept, and are used for errors outside any locale prefix.
+   *
+   * In server output, localized error pages are always rendered on demand, because a prerendered
+   * error page is served as a static file without going through the middleware. In static output
+   * with an adapter, add `export const prerender = false` to the error page to get the same.
+   *
+   * @default [404, 500]
+   */
+  errorPages?: ErrorPageStatus[];
   /**
    * Behavior when a route is missing for a locale.
    *
@@ -116,6 +132,7 @@ export function resolveOptions<Locales extends string = string>(
       ...options.routes,
     },
     prefixDefaultLocale: options.prefixDefaultLocale ?? false,
+    errorPages: options.errorPages ?? [404, 500],
     missingRouteBehavior: options.missingRouteBehavior ?? "error",
     routableExtensions: options.routableExtensions ?? [".astro"],
     removeOriginalPageRoutes: options.removeOriginalPageRoutes ?? { enabled: false },

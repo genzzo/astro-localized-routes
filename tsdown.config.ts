@@ -1,11 +1,11 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/remove-original-routes-middleware.ts"],
+  entry: ["src/index.ts", "src/middleware.ts"],
   deps: { neverBundle: ["astro-routing-international:internal:virtual"] },
   dts: { tsgo: true },
   exports: {
-    exclude: ["remove-original-routes-middleware"],
+    exclude: ["middleware"],
   },
   tsconfig: "./tsconfig.build.json",
 });
