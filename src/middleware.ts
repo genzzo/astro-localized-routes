@@ -1,6 +1,5 @@
 import type { MiddlewareHandler } from "astro";
 import {
-  base,
   isDev,
   localizedErrorPages,
   routePatternsToHide,
@@ -36,7 +35,9 @@ export const onRequest: MiddlewareHandler = async (ctx, next) => {
   // requested locale when there is one
   const errorPage = errorPagesMap.get(ctx.routePattern);
   if (errorPage !== undefined) {
-    const locale = ctx.url.pathname.slice(base.length).split("/")[1];
+    // the path that was requested, which stays the same after a rewrite (e.g. `/en/blog/missing`
+    // rewritten to `/404`) and doesn't include `base`
+    const locale = ctx.originPathname.split("/")[1];
     const copy = errorPage.copies.get(locale);
     if (copy === undefined) return next();
     // a trailing slash is required with `trailingSlash: "always"`, otherwise the copy doesn't

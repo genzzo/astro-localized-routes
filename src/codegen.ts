@@ -18,9 +18,10 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
    * Returns the locale of the current route. Pass \`Astro\` in pages and components, or the
    * context in endpoints and middleware.
    *
-   * Routes created by the integration return their own locale, and error pages rendered on
-   * demand return the locale of the requested path (e.g. \`en\` for \`/en/missing\`). Any other
-   * route returns the locale its path starts with (e.g. \`/en/feed.xml\`), or the default locale.
+   * Routes created by the integration return their own locale. Error pages and any other route
+   * return the locale the requested path starts with (e.g. \`en\` for \`/en/missing\` or
+   * \`/en/feed.xml\`), or the default locale. Server islands and actions return the locale of the
+   * page that called them.
    *
    * @example
    * \`\`\`astro
@@ -32,7 +33,11 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
    * <html lang={locale}>
    * \`\`\`
    */
-  export function getLocale(context: { routePattern: string; url: URL }): Locale;
+  export function getLocale(context: {
+    routePattern: string;
+    originPathname: string;
+    request: Request;
+  }): Locale;
 }
 `;
 }
