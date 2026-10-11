@@ -186,12 +186,19 @@ export default function localizedRoutes<Locales extends string>(
                 },
                 load(id) {
                   if (id !== RESOLVED_INTERNAL_ID) return null;
+                  // the regex and pattern of every page, in the order Astro matches them (e.g.
+                  // `/fr/cours` before `/fr/[slug]`), which Astro resolves before loading modules
+                  const pageRoutes = (resolvedRoutes ?? [])
+                    .filter((route) => route.type === "page")
+                    .map((route) => `[${route.patternRegex}, ${JSON.stringify(route.pattern)}]`);
                   return [
                     `export const routePatternsToHide = new Set(${JSON.stringify(Array.from(routePatternsToHide))});`,
                     `export const localizedErrorPages = ${JSON.stringify(localizedErrorPages)};`,
                     `export const locales = ${JSON.stringify(resolvedOptions.locales)};`,
                     `export const defaultLocale = ${JSON.stringify(resolvedOptions.defaultLocale)};`,
                     `export const localeByRoutePattern = new Map(${JSON.stringify(Array.from(localeByRoutePattern))});`,
+                    `export const pageRoutes = [${pageRoutes.join(", ")}];`,
+                    `export const buildFormat = ${JSON.stringify(astroConfig.build.format)};`,
                     `export const base = ${JSON.stringify(astroConfig.base.replace(/\/$/, ""))};`,
                     `export const trailingSlash = ${JSON.stringify(astroConfig.trailingSlash)};`,
                     `export const isDev = ${JSON.stringify(command === "dev")};`,

@@ -5,6 +5,9 @@ declare module "astro-localized-routes:internal:virtual" {
   const defaultLocale: string;
   // the locale of each route we created (e.g. `/en/about` -> `en`)
   const localeByRoutePattern: ReadonlyMap<string, string>;
+  // the regex and pattern of every page, in the order Astro matches them
+  const pageRoutes: ReadonlyArray<readonly [RegExp, string]>;
+  const buildFormat: "file" | "directory" | "preserve";
   // Astro's `base` without its trailing slash (e.g. `/docs`, or `""` for the root)
   const base: string;
   const trailingSlash: "always" | "never" | "ignore";
