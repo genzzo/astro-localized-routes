@@ -7,16 +7,17 @@ import fs from "fs";
 import {
   ASTRO_ROUTE_EXTENSIONS,
   ClaimedPatternsChecker,
-  isErrorPagePattern,
   isRootPattern,
   pageFileToPattern,
 } from "./pattern";
 import { BuildCleaner } from "./build";
+import { virtualModuleTypes } from "./codegen";
 import type { ErrorPageStatus } from "./types";
+import { RESOLVED_INTERNAL_ID, VIRTUAL_ID, VIRTUAL_INTERNAL_ID } from "./constants";
+import { isRootErrorPage } from "./utils";
 
 const INTEGRATION_NAME = "astro-localized-routes";
-const VIRTUAL_INTERNAL_ID = "astro-localized-routes:internal:virtual";
-const RESOLVED_INTERNAL_ID = `\0${VIRTUAL_INTERNAL_ID}`;
+const LOCALE_MODULE_PATH = fileURLToPath(new URL("./locale.mjs", import.meta.url));
 
 export default function localizedRoutes<Locales extends string>(
   options: AstroLocalizedRoutesOptions<Locales>,
@@ -30,6 +31,8 @@ export default function localizedRoutes<Locales extends string>(
   const routePatternsToUnlist: Set<string> = new Set();
   // the routes Astro resolved, which builds resolve before "astro:config:done"
   let resolvedRoutes: IntegrationResolvedRoute[] | undefined;
+  // the locale of each route we created, which `getLocale` reads (e.g. `/en/about` -> `en`)
+  const localeByRoutePattern: Map<string, Locales> = new Map();
 
   let localizedErrorPages: Partial<
     Record<`/${ErrorPageStatus}`, Partial<Record<Locales, string>>>
@@ -46,6 +49,7 @@ export default function localizedRoutes<Locales extends string>(
     routePatternsToHide.clear();
     routePatternsToUnlist.clear();
     resolvedRoutes = undefined;
+    localeByRoutePattern.clear();
     localizedErrorPages = {};
     errorPageComponents.clear();
     buildCleaner.resetCleanFlag();
@@ -85,7 +89,7 @@ export default function localizedRoutes<Locales extends string>(
           // route ignored by Astro's routing system (e.g. `_filename.astro`)
           if (basePattern === null) continue;
 
-          const isErrorPage = isErrorPagePattern(basePattern);
+          const isErrorPage = isRootErrorPage(basePattern);
           // skip error pages that are not listed in `errorPages`
           if (isErrorPage && !errorPagePatterns.has(basePattern)) continue;
 
@@ -130,11 +134,13 @@ export default function localizedRoutes<Locales extends string>(
             }
 
             // only the error pages themselves can use an error page path (e.g. `/404`)
-            if (!isErrorPage && isErrorPagePattern(localizedPattern)) {
+            if (!isErrorPage && isRootErrorPage(localizedPattern)) {
               throw new Error(
                 `Localized patterns are not allowed to use error page paths: pattern "${localizedPattern}" for file "${file}" and locale "${locale}"`,
               );
             }
+
+            localeByRoutePattern.set(localizedPattern, locale);
 
             if (localizedPattern === basePattern) {
               keepOriginal = true; // served by the page's own route
@@ -168,20 +174,31 @@ export default function localizedRoutes<Locales extends string>(
           }
         }
 
-        const hasLocalizedErrorPages = Object.keys(localizedErrorPages).length > 0;
-        if (!resolvedOptions.removeOriginalPageRoutes && !hasLocalizedErrorPages) return;
-
         updateConfig({
           vite: {
             plugins: [
               {
                 name: VIRTUAL_INTERNAL_ID,
-                resolveId: (id) => (id === VIRTUAL_INTERNAL_ID ? RESOLVED_INTERNAL_ID : null),
+                resolveId: (id) => {
+                  if (id === VIRTUAL_INTERNAL_ID) return RESOLVED_INTERNAL_ID;
+                  if (id === VIRTUAL_ID) return LOCALE_MODULE_PATH;
+                  return null;
+                },
                 load(id) {
                   if (id !== RESOLVED_INTERNAL_ID) return null;
+                  // the regex and pattern of every page, in the order Astro matches them (e.g.
+                  // `/fr/cours` before `/fr/[slug]`), which Astro resolves before loading modules
+                  const pageRoutes = (resolvedRoutes ?? [])
+                    .filter((route) => route.type === "page")
+                    .map((route) => `[${route.patternRegex}, ${JSON.stringify(route.pattern)}]`);
                   return [
                     `export const routePatternsToHide = new Set(${JSON.stringify(Array.from(routePatternsToHide))});`,
                     `export const localizedErrorPages = ${JSON.stringify(localizedErrorPages)};`,
+                    `export const locales = ${JSON.stringify(resolvedOptions.locales)};`,
+                    `export const defaultLocale = ${JSON.stringify(resolvedOptions.defaultLocale)};`,
+                    `export const localeByRoutePattern = new Map(${JSON.stringify(Array.from(localeByRoutePattern))});`,
+                    `export const pageRoutes = [${pageRoutes.join(", ")}];`,
+                    `export const buildFormat = ${JSON.stringify(astroConfig.build.format)};`,
                     `export const base = ${JSON.stringify(astroConfig.base.replace(/\/$/, ""))};`,
                     `export const trailingSlash = ${JSON.stringify(astroConfig.trailingSlash)};`,
                     `export const isDev = ${JSON.stringify(command === "dev")};`,
@@ -189,8 +206,14 @@ export default function localizedRoutes<Locales extends string>(
                 },
               },
             ],
+            // the public module resolves into `node_modules`, so Vite would pre-bundle it for the
+            // browser, but the pre-bundler doesn't run our plugin to resolve the internal module
+            optimizeDeps: { exclude: [VIRTUAL_ID] },
           },
         });
+
+        const hasLocalizedErrorPages = Object.keys(localizedErrorPages).length > 0;
+        if (!resolvedOptions.removeOriginalPageRoutes && !hasLocalizedErrorPages) return;
 
         addMiddleware({
           entrypoint: new URL("./middleware.mjs", import.meta.url),
@@ -206,7 +229,12 @@ export default function localizedRoutes<Locales extends string>(
       "astro:routes:resolved": ({ routes }) => {
         resolvedRoutes = routes;
       },
-      "astro:config:done": async ({ config, logger }) => {
+      "astro:config:done": async ({ config, logger, injectTypes }) => {
+        injectTypes({
+          filename: "types.d.ts",
+          content: virtualModuleTypes(resolvedOptions.locales, resolvedOptions.defaultLocale),
+        });
+
         if (!resolvedOptions.removeOriginalPageRoutes && routePatternsToUnlist.size === 0) return;
 
         const isListedRoute = (route: IntegrationResolvedRoute) =>

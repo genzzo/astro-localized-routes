@@ -1,3 +1,4 @@
+import { normalizePattern } from "./pattern";
 import type { ErrorPageStatus, RoutableExtensions } from "./types";
 
 type MissingRouteBehavior = "error" | "warn" | "use_default" | "ignore";
@@ -135,7 +136,7 @@ export function resolveOptions<Locales extends string = string>(
       "/": Object.fromEntries(options.locales.map((locale) => [locale, "/"])) as Partial<
         Record<NoInfer<Locales>, string>
       >,
-      ...options.routes,
+      ...normalizeRoutes(options.routes),
     },
     prefixDefaultLocale: options.prefixDefaultLocale ?? false,
     errorPages: options.errorPages ?? [404, 500],
@@ -144,4 +145,33 @@ export function resolveOptions<Locales extends string = string>(
     removeOriginalPageRoutes: options.removeOriginalPageRoutes ?? false,
     crossIntegrationBehavior: options.crossIntegrationBehavior ?? {},
   };
+}
+
+// normalize page keys and their paths, so that `/about/` matches the page `/about`
+function normalizeRoutes<Locales extends string>(
+  routes: AstroLocalizedRoutesOptions<Locales>["routes"],
+): AstroLocalizedRoutesOptions<Locales>["routes"] {
+  const normalizedRoutes: AstroLocalizedRoutesOptions<Locales>["routes"] = {};
+  // the key each page was configured with, to report two keys for the same page (e.g. `/about`
+  // and `/about/`)
+  const pageKeys = new Map<string, string>();
+  for (const [page, paths] of Object.entries(routes)) {
+    if (paths === undefined) continue;
+    const normalizedPage = normalizePattern(page);
+    const otherPage = pageKeys.get(normalizedPage);
+    if (otherPage !== undefined) {
+      throw new Error(
+        `Duplicate routes for page "${normalizedPage}": "${otherPage}" and "${page}"`,
+      );
+    }
+    pageKeys.set(normalizedPage, page);
+
+    const normalizedPaths: Partial<Record<Locales, string>> = {};
+    for (const locale of Object.keys(paths) as Locales[]) {
+      const path = paths[locale];
+      if (path !== undefined) normalizedPaths[locale] = normalizePattern(path);
+    }
+    normalizedRoutes[normalizedPage] = normalizedPaths;
+  }
+  return normalizedRoutes;
 }

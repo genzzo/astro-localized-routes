@@ -79,15 +79,29 @@ Since `removeOriginalPageRoutes` is enabled, the original `/about` and `/blog/[s
 
 Each page needs a path for every locale in `routes`, except `/`, which defaults to `/` for every locale. If a locale does not have a path, `missingRouteBehavior` controls how it is handled.
 
-`Astro.currentLocale` is not set by this integration. To determine the locale, read it from the route pattern:
+### Getting the locale
 
 ```astro
 ---
-// Working on this in the next iteration
-const [, prefix] = Astro.routePattern.split("/");
-const locale = prefix === "en" ? "en" : "fr";
+import { getLocale } from "virtual:astro-localized-routes";
+
+const locale = getLocale(Astro); // "fr" | "en"
 ---
+
+<html lang={locale}>
+  <!-- ... -->
+</html>
 ```
+
+Each localized route returns its own locale, including the localized error pages. The root error pages and any other route return the locale the requested path starts with, or the default locale (for example, `en` for `/en/missing`, even after a rewrite to `/404`, or for `/en/rss.xml` served by `[lang]/rss.xml.ts`). Server islands and actions return the locale of the page that called them, based on the page's URL in the browser. When your middleware rewrites a request to another locale (for example, `/` to `/fr` based on `Accept-Language`), the browser's URL doesn't match the page, so pass the locale yourself, as a prop of the island or in the action's input:
+
+```astro
+<Island server:defer locale={getLocale(Astro)} />
+```
+
+This integration doesn't use Astro's `i18n` config, so `Astro.currentLocale` is `undefined` and the `astro:i18n` module can't be used. Use `getLocale` instead.
+
+The module also exports `locales`, `defaultLocale` and the `Locale` type. They are typed from your config once `astro dev`, `astro build` or `astro sync` has run.
 
 ## Options
 

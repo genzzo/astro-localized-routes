@@ -1,5 +1,9 @@
+---
+import { getLocale } from "virtual:astro-localized-routes";
+---
+
 <!doctype html>
-<html lang="en">
+<html lang={getLocale(Astro)}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
