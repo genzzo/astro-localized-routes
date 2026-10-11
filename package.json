@@ -39,7 +39,8 @@
     "format:check": "oxfmt --check && prettier --check \"**/*.astro\"",
     "format": "oxfmt --write && prettier --write --log-level warn \"**/*.astro\"",
     "release": "bumpp",
-    "prepublishOnly": "pnpm run build"
+    "prepublishOnly": "pnpm run build",
+    "prepare": "tsdown"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
