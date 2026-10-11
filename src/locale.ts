@@ -4,6 +4,7 @@ import {
   localeByRoutePattern,
   locales,
 } from "astro-localized-routes:internal:virtual";
+import { ACTION_RPC_ROUTE, SERVER_ISLAND_ROUTE } from "./constants";
 import { getPathLocale } from "./runtime";
 import { isRootErrorPage } from "./utils";
 
@@ -19,8 +20,8 @@ export function getLocale({
   request: Request;
 }): string {
   // server islands and actions called from the browser have their own route, so we use the page
-  // that called them (e.g. `/en/about`), like Astro does for `Astro.currentLocale`
-  if (routePattern.startsWith("/_server-islands/") || routePattern.startsWith("/_actions/")) {
+  // that called them (e.g. `/en/about`), like Astro does for server islands in `currentLocale`
+  if (routePattern === SERVER_ISLAND_ROUTE || routePattern === ACTION_RPC_ROUTE) {
     const referer = request.headers.get("referer");
     if (referer === null || !URL.canParse(referer)) return defaultLocale;
     const { pathname } = new URL(referer);
