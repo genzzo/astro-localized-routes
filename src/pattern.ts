@@ -188,3 +188,11 @@ export function normalizePattern(pattern: string): string {
 export function isRootPattern(pattern: string): boolean {
   return pattern === "/";
 }
+
+// check if two patterns use the same params, in any order and with rest params only matching rest
+// params (e.g. `/journal/[slug]` and `/blog/[slug]`, but not `/blog/[...slug]`)
+export function hasSameParams(pattern: string, otherPattern: string): boolean {
+  const getParams = (value: string) =>
+    Array.from(value.matchAll(/\[([^\]]+)\]/g), (match) => match[1]).sort();
+  return getParams(pattern).join("/") === getParams(otherPattern).join("/");
+}

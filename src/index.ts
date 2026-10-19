@@ -7,6 +7,7 @@ import fs from "fs";
 import {
   ASTRO_ROUTE_EXTENSIONS,
   ClaimedPatternsChecker,
+  hasSameParams,
   isRootPattern,
   pageFileToPattern,
 } from "./pattern";
@@ -145,6 +146,14 @@ export default function localizedRoutes<Locales extends string>(
             if (!isErrorPage && isRootErrorPage(localizedPattern)) {
               throw new Error(
                 `Localized patterns are not allowed to use error page paths: pattern "${localizedPattern}" for file "${file}" and locale "${locale}"`,
+              );
+            }
+
+            // the page reads its params by name and `getAlternates` passes them to the other
+            // locales, so a localized pattern can't rename them (e.g. `/journal/[titre]` for `/blog/[slug]`)
+            if (!hasSameParams(localizedPattern, basePattern)) {
+              throw new Error(
+                `Localized patterns must use the same parameters as their page: pattern "${localizedPattern}" for file "${file}" and locale "${locale}" doesn't match "${basePattern}"`,
               );
             }
 
