@@ -1,6 +1,6 @@
 {
   "name": "astro-localized-routes",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "The way Astro should be handling i18n in the first place.",
   "keywords": [
     "astro",
