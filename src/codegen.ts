@@ -48,7 +48,9 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
    * routes use the current params for every locale.
    *
    * Error pages, server islands, actions and routes of pages that aren't localized return an
-   * empty list.
+   * empty list. With \`removeOriginalPageRoutes\` disabled, an original route that no locale uses
+   * (e.g. \`/about\` next to \`/a-propos\`) returns the alternates of its page, which don't include
+   * its own path.
    *
    * @example
    * \`\`\`astro

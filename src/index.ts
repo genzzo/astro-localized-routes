@@ -159,7 +159,8 @@ export default function localizedRoutes<Locales extends string>(
 
             localeByRoutePattern.set(localizedPattern, locale);
 
-            // error pages don't have alternates, since their path doesn't change with the locale
+            // error pages don't have alternates, because they're rendered for any missing path
+            // instead of being linked to (e.g. `/en/blog/missing` rewritten to `/en/404`)
             if (!isErrorPage) {
               localizedPatterns[locale] = localizedPattern;
               pageByRoutePattern.set(localizedPattern, basePattern);

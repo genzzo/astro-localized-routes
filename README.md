@@ -120,9 +120,9 @@ const alternates = getAlternates(Astro);
 </head>
 ```
 
-`getAlternates` returns the path of the current page in every locale it exists in, the current locale included. Use it for a language switcher, or for `hreflang` links, which need `site` in your config to be absolute. Paths include `base` and end with a slash when Astro adds one to its own links (with `trailingSlash: "always"`, or `"ignore"` with `build.format: "directory"`).
+`getAlternates` returns the path of the current page in every locale it exists in, the current locale included. Use it for a language switcher, or for `hreflang` links, which need `site` in your config, because `new URL` throws without it. Paths include `base` and end with a slash when Astro adds one to its own links (with `trailingSlash: "always"`, or `"ignore"` with `build.format: "directory"`).
 
-Dynamic routes use the current params for every locale, so `/journal/mon-article` gets `/en/blog/mon-article/`. If your slugs are translated, or an entry doesn't exist in every locale (for example, a post that is only in French), build those links yourself for now, otherwise they lead to pages that weren't built. Error pages, server islands, actions and routes of pages that aren't localized return an empty list.
+Dynamic routes use the current params for every locale, so `/journal/mon-article` gets `/en/blog/mon-article/`. If your slugs are translated, or an entry doesn't exist in every locale (for example, a post that is only in French), build those links yourself for now, otherwise they lead to pages that weren't built. Error pages, server islands, actions and routes of pages that aren't localized return an empty list. With `removeOriginalPageRoutes` disabled, an original route that no locale uses (for example, `/about` next to `/a-propos`) returns the alternates of its page, which don't include its own path.
 
 ## Options
 
