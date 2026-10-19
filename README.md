@@ -103,6 +103,27 @@ This integration doesn't use Astro's `i18n` config, so `Astro.currentLocale` is 
 
 The module also exports `locales`, `defaultLocale` and the `Locale` type. They are typed from your config once `astro dev`, `astro build` or `astro sync` has run.
 
+### Linking to other locales
+
+```astro
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+
+// on `/a-propos`: [{ locale: "fr", path: "/a-propos/" }, { locale: "en", path: "/en/about/" }]
+const alternates = getAlternates(Astro);
+---
+
+<head>
+  {alternates.map(({ locale, path }) => (
+    <link rel="alternate" hreflang={locale} href={new URL(path, Astro.site)} />
+  ))}
+</head>
+```
+
+`getAlternates` returns the path of the current page in every locale it exists in, the current locale included. Use it for a language switcher, or for `hreflang` links, which need `site` in your config to be absolute. Paths include `base` and end with a slash when Astro adds one to its own links (with `trailingSlash: "always"`, or `"ignore"` with `build.format: "directory"`).
+
+Dynamic routes use the current params for every locale, so `/journal/mon-article` gets `/en/blog/mon-article/`. If your slugs are translated, build those links yourself for now. Error pages, server islands, actions and routes of pages that aren't localized return an empty list.
+
 ## Options
 
 | Option                     | Default      | Description                                                                                                                                                                          |

@@ -33,6 +33,11 @@ export default function localizedRoutes<Locales extends string>(
   let resolvedRoutes: IntegrationResolvedRoute[] | undefined;
   // the locale of each route we created, which `getLocale` reads (e.g. `/en/about` -> `en`)
   const localeByRoutePattern: Map<string, Locales> = new Map();
+  // the localized pattern of each page for every locale, which `getAlternates` reads (e.g. `/about`
+  // -> `fr` -> `/a-propos`, `en` -> `/en/about`)
+  const localizedPatternsByPage: Map<string, Partial<Record<Locales, string>>> = new Map();
+  // the page each of its routes serves (e.g. `/en/about` -> `/about`)
+  const pageByRoutePattern: Map<string, string> = new Map();
 
   let localizedErrorPages: Partial<
     Record<`/${ErrorPageStatus}`, Partial<Record<Locales, string>>>
@@ -50,6 +55,8 @@ export default function localizedRoutes<Locales extends string>(
     routePatternsToUnlist.clear();
     resolvedRoutes = undefined;
     localeByRoutePattern.clear();
+    localizedPatternsByPage.clear();
+    pageByRoutePattern.clear();
     localizedErrorPages = {};
     errorPageComponents.clear();
     buildCleaner.resetCleanFlag();
@@ -95,6 +102,7 @@ export default function localizedRoutes<Locales extends string>(
 
           // root error pages should always be kept as Astro needs them as fallback routes
           let keepOriginal = isErrorPage || !resolvedOptions.removeOriginalPageRoutes;
+          const localizedPatterns: Partial<Record<Locales, string>> = {};
 
           for (const locale of resolvedOptions.locales) {
             let localizedPattern: string | undefined =
@@ -142,6 +150,12 @@ export default function localizedRoutes<Locales extends string>(
 
             localeByRoutePattern.set(localizedPattern, locale);
 
+            // error pages don't have alternates, since their path doesn't change with the locale
+            if (!isErrorPage) {
+              localizedPatterns[locale] = localizedPattern;
+              pageByRoutePattern.set(localizedPattern, basePattern);
+            }
+
             if (localizedPattern === basePattern) {
               keepOriginal = true; // served by the page's own route
               continue;
@@ -172,6 +186,12 @@ export default function localizedRoutes<Locales extends string>(
           if (!keepOriginal) {
             routePatternsToHide.add(basePattern);
           }
+
+          if (!isErrorPage) {
+            localizedPatternsByPage.set(basePattern, localizedPatterns);
+            // the original route serves the page too when it's kept (e.g. `/about` next to `/a-propos`)
+            if (keepOriginal) pageByRoutePattern.set(basePattern, basePattern);
+          }
         }
 
         updateConfig({
@@ -197,6 +217,8 @@ export default function localizedRoutes<Locales extends string>(
                     `export const locales = ${JSON.stringify(resolvedOptions.locales)};`,
                     `export const defaultLocale = ${JSON.stringify(resolvedOptions.defaultLocale)};`,
                     `export const localeByRoutePattern = new Map(${JSON.stringify(Array.from(localeByRoutePattern))});`,
+                    `export const localizedPatternsByPage = new Map(${JSON.stringify(Array.from(localizedPatternsByPage))});`,
+                    `export const pageByRoutePattern = new Map(${JSON.stringify(Array.from(pageByRoutePattern))});`,
                     `export const pageRoutes = [${pageRoutes.join(", ")}];`,
                     `export const buildFormat = ${JSON.stringify(astroConfig.build.format)};`,
                     `export const base = ${JSON.stringify(astroConfig.base.replace(/\/$/, ""))};`,
