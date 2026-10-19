@@ -1,5 +1,5 @@
 ---
-import { getLocale } from "virtual:astro-localized-routes";
+import { getAlternates, getLocale } from "virtual:astro-localized-routes";
 ---
 
 <!doctype html>
@@ -13,6 +13,13 @@ import { getLocale } from "virtual:astro-localized-routes";
     <title>Astro Localized Routes</title>
   </head>
   <body>
+    <nav>
+      {getAlternates(Astro).map(({ locale, path }) => (
+        <a href={path} hreflang={locale}>
+          {locale}
+        </a>
+      ))}
+    </nav>
     <slot />
   </body>
 </html>

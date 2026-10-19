@@ -77,7 +77,7 @@ With these pages, the resulting routes are:
 
 Since `removeOriginalPageRoutes` is enabled, the original `/about` and `/blog/[slug]` routes return a 404. `/` remains available because it is also the French home page.
 
-Each page needs a path for every locale in `routes`, except `/`, which defaults to `/` for every locale. If a locale does not have a path, `missingRouteBehavior` controls how it is handled.
+Each page needs a path for every locale in `routes`, except `/`, which defaults to `/` for every locale. If a locale does not have a path, `missingRouteBehavior` controls how it is handled. A path must use the same parameters as its page (for example, `/journal/[slug]` for `/blog/[slug]`).
 
 ### Getting the locale
 
@@ -102,6 +102,27 @@ Each localized route returns its own locale, including the localized error pages
 This integration doesn't use Astro's `i18n` config, so `Astro.currentLocale` is `undefined` and the `astro:i18n` module can't be used. Use `getLocale` instead.
 
 The module also exports `locales`, `defaultLocale` and the `Locale` type. They are typed from your config once `astro dev`, `astro build` or `astro sync` has run.
+
+### Linking to other locales
+
+```astro
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+
+// on `/a-propos`: [{ locale: "fr", path: "/a-propos/" }, { locale: "en", path: "/en/about/" }]
+const alternates = getAlternates(Astro);
+---
+
+<head>
+  {alternates.map(({ locale, path }) => (
+    <link rel="alternate" hreflang={locale} href={new URL(path, Astro.site)} />
+  ))}
+</head>
+```
+
+`getAlternates` returns the path of the current page in every locale it exists in, the current locale included. Use it for a language switcher, or for `hreflang` links, which need `site` in your config, because `new URL` throws without it. Paths include `base` and end with a slash when Astro adds one to its own links (with `trailingSlash: "always"`, or `"ignore"` with `build.format: "directory"`).
+
+Dynamic routes use the current params for every locale, so `/journal/mon-article` gets `/en/blog/mon-article/`. If your slugs are translated, or an entry doesn't exist in every locale (for example, a post that is only in French), build those links yourself for now, otherwise they lead to pages that weren't built. Error pages, server islands, actions and routes of pages that aren't localized return an empty list. With `removeOriginalPageRoutes` disabled, an original route that no locale uses (for example, `/about` next to `/a-propos`) returns the alternates of its page, which don't include its own path.
 
 ## Options
 

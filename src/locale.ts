@@ -3,8 +3,11 @@ import {
   buildFormat,
   defaultLocale,
   localeByRoutePattern,
+  localizedPatternsByPage,
   locales,
+  pageByRoutePattern,
   pageRoutes,
+  trailingSlash,
 } from "astro-localized-routes:internal:virtual";
 import { ACTION_RPC_ROUTE, SERVER_ISLAND_ROUTE } from "./constants";
 import { getPathLocale } from "./runtime";
@@ -36,6 +39,50 @@ export function getLocale({
   // the path that was requested, which stays the same after a rewrite (e.g. `/en/blog/missing`
   // rewritten to `/404`) and doesn't include `base`
   return getPathLocale(originPathname) ?? defaultLocale;
+}
+
+export function getAlternates({
+  routePattern,
+  params,
+}: {
+  routePattern: string;
+  params: Record<string, string | undefined>;
+}): { locale: string; path: string }[] {
+  const page = pageByRoutePattern.get(routePattern);
+  const localizedPatterns = page === undefined ? undefined : localizedPatternsByPage.get(page);
+  if (localizedPatterns === undefined) return [];
+
+  return locales.flatMap((locale) => {
+    const pattern = localizedPatterns[locale];
+    // the page doesn't exist in every locale (e.g. with `missingRouteBehavior: "ignore"`)
+    if (pattern === undefined) return [];
+    return [{ locale, path: getPath(pattern, params) }];
+  });
+}
+
+// the path of a route with the given params, with `base` and a trailing slash when Astro adds one
+// to its own links (e.g. `/journal/[slug]` -> `/docs/journal/mon-article/`)
+function getPath(pattern: string, params: Record<string, string | undefined>): string {
+  const segments = pattern.split("/").flatMap((segment) => {
+    const value = segment.replace(
+      /\[(\.\.\.)?([^\]]+)\]/g,
+      (_, spread: string | undefined, name: string) => {
+        const param = params[name];
+        // a rest parameter can be empty (e.g. `/docs/[...slug]` -> `/docs`)
+        if (param === undefined && spread === undefined) {
+          throw new Error(`Missing parameter "${name}" for the route "${pattern}"`);
+        }
+        // like Astro, we escape the characters that would end the path (e.g. `#` and `?`)
+        return (param ?? "").normalize().replace(/#/g, "%23").replace(/\?/g, "%3F");
+      },
+    );
+    return value === "" ? [] : [value];
+  });
+
+  const path = [base, ...segments].join("/");
+  const appendSlash =
+    trailingSlash === "always" || (trailingSlash === "ignore" && buildFormat === "directory");
+  return appendSlash ? `${path}/` : path || "/";
 }
 
 // the locale of the page at a path, which we match against Astro's routes like its router does,

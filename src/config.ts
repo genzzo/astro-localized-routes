@@ -34,6 +34,9 @@ export interface AstroLocalizedRoutesOptions<Locales extends string = string> {
   /**
    * The routing table map.
    *
+   * Each path must use the same parameters as its page (e.g. `/journal/[slug]` for
+   * `/blog/[slug]`).
+   *
    * Error pages (`/404` and `/500`) are not configured here, see
    * {@link AstroLocalizedRoutesOptions.errorPages errorPages}.
    *
