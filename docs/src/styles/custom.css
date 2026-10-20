@@ -8,3 +8,9 @@
 starlight-file-tree {
   direction: ltr;
 }
+
+/* code blocks inherit the page direction, so on Arabic pages a long line starts scrolled to its end
+   and hides its first characters */
+.expressive-code pre {
+  direction: ltr;
+}
