@@ -1,0 +1,86 @@
+---
+title: مبدّل اللغة وروابط hreflang
+description: اربط بالصفحة الحالية في اللغات الأخرى باستخدام getAlternates.
+---
+
+تُرجع الدالة [`getAlternates`](/ar/reference/runtime-api/#getalternates) مسار الصفحة الحالية في كل لغة توجد فيها، بما فيها اللغة الحالية، وفق ترتيب `locales` لديك:
+
+```astro
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+
+// on `/a-propos`: [{ locale: "fr", path: "/a-propos/" }, { locale: "en", path: "/en/about/" }]
+const alternates = getAlternates(Astro);
+---
+```
+
+## إنشاء مبدّل اللغة
+
+```astro title="src/components/LanguageSwitcher.astro"
+---
+import { getAlternates, getLocale } from "virtual:astro-localized-routes";
+
+const labels = { fr: "Français", en: "English" };
+const current = getLocale(Astro);
+---
+
+<nav aria-label="Language">
+  <ul>
+    {
+      getAlternates(Astro).map(({ locale, path }) => (
+        <li>
+          <a
+            href={path}
+            hreflang={locale}
+            lang={locale}
+            aria-current={locale === current ? "page" : undefined}
+          >
+            {labels[locale]}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+```
+
+لا تظهر في القائمة اللغةُ التي لا توجد فيها الصفحة، مثلًا بسبب [`missingRouteBehavior: "ignore"`](/ar/guides/missing-translations/).
+
+## إضافة روابط hreflang
+
+تحتاج روابط `hreflang` إلى عناوين URL مطلقة، لذا اضبط الخيار [`site`](https://docs.astro.build/en/reference/configuration-reference/#site) في إعدادات Astro. فبدونه، يرمي `new URL` خطأً:
+
+```astro title="src/layouts/Layout.astro"
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+
+const alternates = getAlternates(Astro);
+---
+
+<head>
+  {
+    alternates.map(({ locale, path }) => (
+      <link rel="alternate" hreflang={locale} href={new URL(path, Astro.site)} />
+    ))
+  }
+</head>
+```
+
+## المسار الأساسي والشرطة المائلة في النهاية
+
+المسارات جاهزة للاستخدام في الروابط:
+
+- تتضمن قيمة [`base`](https://docs.astro.build/en/reference/configuration-reference/#base) لديك، مثل `/docs/en/about/`.
+- تنتهي بشرطة مائلة عندما يضيفها Astro إلى روابطه الخاصة: مع `trailingSlash: "always"`، أو مع `"ignore"` و`build.format: "directory"`، وهما القيمتان الافتراضيتان في Astro.
+
+## المسارات الديناميكية وقيم slug المترجمة
+
+تستخدم المسارات الديناميكية المعاملات الحالية لكل اللغات، لذا يحصل `/journal/mon-article` على `/en/blog/mon-article/`.
+
+إذا كانت قيم slug لديك مترجمة، أو كان أحد المُدخلات غير موجود في كل اللغات (مثل مقالة متوفرة بالفرنسية فقط)، فأنشئ تلك الروابط بنفسك في الوقت الحالي. وإلا فستقود إلى صفحات لم تُبنَ.
+
+## عندما تكون القائمة فارغة
+
+تُرجع صفحات الخطأ، وجزر الخادم، والإجراءات، ومسارات الصفحات غير المترجمة قائمةً فارغة.
+
+عند تعطيل [`removeOriginalPageRoutes`](/ar/reference/configuration/#removeoriginalpageroutes)، يُرجع المسار الأصلي الذي لا تستخدمه أي لغة، مثل `/about` إلى جانب `/a-propos`، البدائلَ الخاصة بصفحته، ولا تتضمن هذه البدائل مساره هو.

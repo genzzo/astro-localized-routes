@@ -1,0 +1,86 @@
+---
+title: واجهة API لوقت التشغيل
+description: الدوال المساعدة التي تصدّرها الوحدة virtual:astro-localized-routes.
+---
+
+```ts
+import {
+  getLocale,
+  getAlternates,
+  locales,
+  defaultLocale,
+  type Locale,
+} from "virtual:astro-localized-routes";
+```
+
+تُستمد أنواع الوحدة من إعداداتك. وتُولَّد هذه الأنواع عند تشغيل `astro dev` أو `astro build` أو `astro sync`.
+
+## `getLocale()`
+
+**النوع:** `(context: { routePattern: string; originPathname: string; request: Request }) => Locale`
+
+تُرجع لغة المسار الحالي. مرّر `Astro` في الصفحات والمكوّنات، أو السياق في نقاط النهاية والوسيط.
+
+```astro
+---
+import { getLocale } from "virtual:astro-localized-routes";
+
+const locale = getLocale(Astro);
+---
+
+<html lang={locale}>
+```
+
+- تُرجع المسارات التي ينشئها التكامل لغتها الخاصة.
+- تُرجع صفحات الخطأ وأي مسار آخر اللغة التي يبدأ بها المسار المطلوب (مثل `en` للمسار `/en/missing` أو `/en/feed.xml`)، أو اللغة الافتراضية.
+- تُرجع جزر الخادم والإجراءات لغة الصفحة التي استدعتها.
+
+راجع [قراءة اللغة الحالية](/ar/guides/current-locale/).
+
+## `getAlternates()`
+
+**النوع:** `(context: { routePattern: string; params: Record<string, string | undefined> }) => { locale: Locale; path: string }[]`
+
+تُرجع مسار الصفحة الحالية في كل لغة توجد فيها، بما فيها اللغة الحالية، وفق ترتيب `locales`. مرّر `Astro` في الصفحات والمكوّنات، أو السياق في نقاط النهاية والوسيط.
+
+```astro
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+---
+
+{
+  getAlternates(Astro).map(({ locale, path }) => (
+    <link rel="alternate" hreflang={locale} href={new URL(path, Astro.site)} />
+  ))
+}
+```
+
+- تتضمن المسارات قيمة `base`، وتنتهي بشرطة مائلة عندما يضيفها Astro إلى روابطه الخاصة.
+- تستخدم المسارات الديناميكية المعاملات الحالية لكل اللغات.
+- تُرجع صفحات الخطأ، وجزر الخادم، والإجراءات، ومسارات الصفحات غير المترجمة قائمةً فارغة.
+
+راجع [مبدّل اللغة وروابط hreflang](/ar/guides/language-switcher/).
+
+## `locales`
+
+**النوع:** `readonly Locale[]`
+
+قيمة `locales` في إعداداتك.
+
+## `defaultLocale`
+
+**النوع:** `Locale`
+
+قيمة `defaultLocale` في إعداداتك.
+
+## `Locale`
+
+**النوع:** `"fr" | "en"`، مستمد من إعداداتك
+
+اتحاد (union) لغاتك، مثلًا لتحديد نوع قاموس:
+
+```ts
+import type { Locale } from "virtual:astro-localized-routes";
+
+const labels: Record<Locale, string> = { fr: "Français", en: "English" };
+```

@@ -1,0 +1,73 @@
+---
+title: لماذا astro-localized-routes
+description: مشكلة عناوين URL المترجمة في Astro، وكيف يحلّها هذا التكامل.
+---
+
+import { FileTree } from "@astrojs/starlight/components";
+
+## المشكلة
+
+يتبع نظام التوجيه متعدد اللغات (i18n) المدمج في Astro بنية مجلداتك: لكل لغة (locale) مجلدها الخاص في `src/pages`، ويُستمد كل عنوان URL من اسم ملف. أما ترجمة عنوان URL نفسه، مثل `/a-propos` بالفرنسية و`/en/about` بالإنجليزية، فتعني ملف صفحة منفصلًا لكل لغة:
+
+<FileTree>
+
+- src/pages/
+  - a-propos.astro
+  - en/
+    - about.astro
+
+</FileTree>
+
+تتشارك هذه الملفات عادةً التخطيط والمنطق نفسيهما، لذا عليك إجراء كل تعديل مرة لكل لغة. والبديل هو مسار شامل مثل `[...slug].astro` مع جدولك الخاص للمسارات المترجمة، وهو ما يحلّ محلّ نظام التوجيه في Astro.
+
+## الفكرة
+
+مع astro-localized-routes، تكتب كل صفحة مرة واحدة باسم ملف محايد لغويًا، وتمنحها مسارًا لكل لغة في إعدادات Astro:
+
+<FileTree>
+
+- src/pages/
+  - index.astro
+  - about.astro
+  - blog/
+    - [slug].astro
+
+</FileTree>
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+    "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  },
+});
+```
+
+يسجّل التكامل لكل لغة مسارًا يشير إلى ملف الصفحة نفسه:
+
+| الصفحة              | `fr` (الافتراضية) | `en`              |
+| ------------------- | ----------------- | ----------------- |
+| `index.astro`       | `/`               | `/en`             |
+| `about.astro`       | `/a-propos`       | `/en/about`       |
+| `blog/[slug].astro` | `/journal/[slug]` | `/en/blog/[slug]` |
+
+بعد ذلك، تقرأ كل صفحة لغتها عبر الدالة [`getLocale`](/ar/reference/runtime-api/#getlocale) وتعرض المحتوى المناسب. لا يُولَّد أي شيء ولا يُنسخ إلى مشروعك.
+
+## ما تحصل عليه أيضًا
+
+- روابط إلى الصفحة نفسها في اللغات الأخرى عبر [`getAlternates`](/ar/reference/runtime-api/#getalternates)، لمبدّل اللغة أو لروابط `hreflang`.
+- صفحتا 404 و500 لكل لغة.
+- خيار لإزالة المسارات الأصلية، فلا تُقدَّم إلا المسارات المترجمة، ولا يُدرج غيرها في خريطة الموقع.
+- أنواع (types) للغاتك، مولَّدة من إعداداتك.
+
+## هل يناسبك؟
+
+يناسبك هذا التكامل عندما يجب أن تكون عناوين URL مترجمة، سواء للقرّاء أو لمحركات البحث، وتتشارك صفحاتك القالب نفسه في كل اللغات.
+
+إذا كان المسار نفسه في كل اللغات مناسبًا لك (أي `/fr/about` و`/en/about`)، فنظام التوجيه متعدد اللغات المدمج في Astro يكفي. ولا يمكن الجمع بين الاثنين: لا يستخدم هذا التكامل الإعداد `i18n` في Astro، لذا [انتقل منه](/ar/guides/migrating-from-astro-i18n/) إن كنت تستخدمه بالفعل.
+
+:::caution[قيد التطوير]
+قد تتضمن الإصدارات القادمة من astro-localized-routes تغييرات غير متوافقة مع ما سبقها. نرحب بملاحظاتكم وبلاغاتكم على [GitHub](https://github.com/genzzo/astro-localized-routes/issues).
+:::

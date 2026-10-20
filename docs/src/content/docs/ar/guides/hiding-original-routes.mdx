@@ -1,0 +1,52 @@
+---
+title: إخفاء المسارات الأصلية
+description: قدّم المسارات المترجمة فقط باستخدام removeOriginalPageRoutes.
+---
+
+## لماذا تخفيها
+
+افتراضيًا، يُحتفظ بالمسارات التي ينشئها Astro من `src/pages`. ففي موقع فرنسي تُقدَّم فيه الصفحة `about.astro` على `/a-propos`، يظل المسار الأصلي `/about` يقدّم الصفحة نفسها، ويظهر في خريطة الموقع.
+
+يفيد إخفاؤها عندما تكون أسماء ملفات صفحاتك بلغة غير لغتك الافتراضية: تسمّي الصفحة `about.astro`، ولا تريد أن يوجد سوى `/a-propos` و`/en/about`.
+
+## إزالة المسارات الأصلية
+
+فعّل الخيار [`removeOriginalPageRoutes`](/ar/reference/configuration/#removeoriginalpageroutes):
+
+```js title="astro.config.mjs" ins={8}
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+    "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  },
+  removeOriginalPageRoutes: true,
+});
+```
+
+## ما يحدث للمسارات الأصلية
+
+- تُرجع 404. وفي البناء الثابت، تُحذف ملفاتها من المخرجات.
+- لا تتلقى التكاملات الأخرى، مثل `@astrojs/sitemap`، سوى المسارات المترجمة. راجع [خريطة الموقع والتكاملات الأخرى](/ar/guides/other-integrations/).
+- يُحتفظ بالمسار الذي لا تزال إحدى اللغات تستخدمه. هنا، يبقى `/` لأنه أيضًا الصفحة الرئيسية الفرنسية.
+- يُحتفظ دائمًا بصفحات الخطأ الجذرية، `/404` و`/500`، لأن Astro يحتاج إليها.
+
+## إعادة توجيه المسار الجذر
+
+عند تفعيل كلٍّ من [`prefixDefaultLocale`](/ar/reference/configuration/#prefixdefaultlocale) و`removeOriginalPageRoutes`، لا يُقدَّم أي شيء على `/`. أعد توجيهه في وسيطك الخاص، الذي يعمل قبل وسيط التكامل:
+
+```ts title="src/middleware.ts"
+import { defineMiddleware } from "astro:middleware";
+
+export const onRequest = defineMiddleware((context, next) => {
+  if (context.url.pathname === "/") return context.redirect("/fr/");
+  return next();
+});
+```
+
+يعمل هذا أثناء التطوير وللصفحات التي تُصيَّر عند الطلب.
+
+## الاستضافات الثابتة
+
+لا يوجد وسيط في الموقع الثابت بعد نشره. تُزال ملفات المسارات الأصلية من البناء، لذا تُرجع استضافتك صفحة 404 الخاصة بها لهذه المسارات. لإعادة توجيه `/` إلى لغة ما، اضبط إعادة التوجيه لدى استضافتك أو شبكة توصيل المحتوى (CDN).

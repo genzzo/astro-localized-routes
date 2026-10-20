@@ -1,0 +1,43 @@
+---
+title: آلية العمل
+description: ما يفعله التكامل عند بدء تشغيل Astro، وعند الطلب، وأثناء البناء.
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+لا يُنشئ astro-localized-routes أي صفحة ولا ينسخها. بل يسجّل مسارات إضافية للصفحات الموجودة لديك، ويرشّح ما يراه باقي Astro.
+
+## عند بدء تشغيل Astro
+
+<Steps>
+
+1. يحصر التكامل الصفحات الموجودة في `src/pages` التي تحمل أحد الامتدادات المحددة في [`routableExtensions`](/ar/reference/configuration/#routableextensions).
+
+2. لكل صفحة ولغة، يجد المسار المترجم في [`routes`](/ar/reference/configuration/#routes)، أو يطبّق [`missingRouteBehavior`](/ar/reference/configuration/#missingroutebehavior)، ثم يضيف بادئة اللغة.
+
+3. يفحص كل مسار بحثًا عن [أخطاء](/ar/reference/errors/): المسارات المفقودة، والتعارضات مع صفحات أخرى، ومسارات صفحات الخطأ، والمعاملات.
+
+4. يسجّل كل مسار مترجم كمسار جديد يشير إلى ملف الصفحة نفسه، عبر الدالة `injectRoute` في Astro. وتحصل صفحات الخطأ على نسخة لكل لغة.
+
+5. يُنشئ الوحدة `virtual:astro-localized-routes`، التي تتضمن لغة كل مسار ومسارات كل صفحة، ويولّد أنواعها.
+
+</Steps>
+
+يحدث هذا بالطريقة نفسها أثناء التطوير وعند البناء، لذا يقدّم الأمر `astro dev` المسارات نفسها التي يقدّمها موقعك في الإنتاج.
+
+## عند الطلب
+
+يضيف التكامل وسيطًا (middleware) عند تفعيل [`removeOriginalPageRoutes`](/ar/reference/configuration/#removeoriginalpageroutes) أو عند ترجمة صفحات الخطأ. يعمل هذا الوسيط بعد وسيطك الخاص، ويقوم بما يلي:
+
+- يُرجع 404 للمسارات الأصلية المخفية،
+- يعرض النسخة المترجمة من صفحة الخطأ عندما يبدأ المسار المطلوب بلغة، مع رمز الحالة الصحيح.
+
+تقرأ الدالتان [`getLocale`](/ar/reference/runtime-api/#getlocale) و[`getAlternates`](/ar/reference/runtime-api/#getalternates) المسار الذي طابقه Astro، لذا تعملان في الصفحات، ونقاط النهاية (endpoints)، والوسيط، وجزر الخادم (server islands)، والإجراءات (actions).
+
+## التكاملات الأخرى
+
+يمنح Astro كل تكامل قائمة مسارات خاصة به. يغلّف هذا التكامل الخطّافين (hooks) `astro:routes:resolved` و`astro:build:done` الخاصين بالتكاملات الأخرى، فلا تتلقى المسارات المخفية ولا صفحات الخطأ المترجمة. راجع [خريطة الموقع والتكاملات الأخرى](/ar/guides/other-integrations/).
+
+## أثناء البناء
+
+يبني Astro كل المسارات، بما فيها المخفية. وبعد انتهاء البناء، يحذف التكامل ملفات المسارات المخفية، والمجلدات التي تصبح فارغة بعدها، حتى لا تقدّمها الاستضافة الثابتة.

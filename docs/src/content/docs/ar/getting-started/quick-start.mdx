@@ -1,0 +1,86 @@
+---
+title: البدء السريع
+description: أنشئ موقعًا بالفرنسية والإنجليزية بعناوين URL مترجمة في خمس دقائق.
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+ينشئ هذا الدليل موقعًا صغيرًا بالفرنسية والإنجليزية، مع اعتماد الفرنسية لغةً افتراضية (default locale).
+
+<Steps>
+
+1. [ثبّت التكامل](/ar/getting-started/installation/)، ثم اضبط لغاتك ومسار كل صفحة:
+
+   ```js title="astro.config.mjs"
+   import { defineConfig } from "astro/config";
+   import localizedRoutes from "astro-localized-routes";
+
+   export default defineConfig({
+     integrations: [
+       localizedRoutes({
+         locales: ["fr", "en"],
+         defaultLocale: "fr",
+         routes: {
+           "/about": { fr: "/a-propos", en: "/about" },
+         },
+       }),
+     ],
+   });
+   ```
+
+   لا تحتاج الصفحة الرئيسية إلى مُدخل: يُقدَّم المسار `/` على `/` لكل لغة، أي `/` بالفرنسية و`/en` بالإنجليزية.
+
+2. أنشئ صفحاتك في `src/pages` كالمعتاد: الصفحتان `index.astro` و`about.astro`، مع تخطيط (layout) في `src/layouts/Layout.astro`. سمِّها كما تشاء، فعناوين URL تأتي من إعداداتك.
+
+3. اقرأ اللغة الحالية في التخطيط لتحديد لغة الصفحة:
+
+   ```astro title="src/layouts/Layout.astro"
+   ---
+   import { getLocale } from "virtual:astro-localized-routes";
+
+   const locale = getLocale(Astro);
+   ---
+
+   <html lang={locale}>
+     <body>
+       <slot />
+     </body>
+   </html>
+   ```
+
+4. اعرض محتوى كل صفحة باللغة الحالية. يكفي قاموس صغير للبدء:
+
+   ```astro title="src/pages/about.astro"
+   ---
+   import { getLocale } from "virtual:astro-localized-routes";
+   import Layout from "../layouts/Layout.astro";
+
+   const content = {
+     fr: { title: "À propos", text: "Bonjour !" },
+     en: { title: "About", text: "Hello!" },
+   };
+   const { title, text } = content[getLocale(Astro)];
+   ---
+
+   <Layout>
+     <h1>{title}</h1>
+     <p>{text}</p>
+   </Layout>
+   ```
+
+5. شغّل خادم التطوير بالأمر `astro dev` وزُر صفحاتك:
+
+   | الصفحة        | `fr`        | `en`        |
+   | ------------- | ----------- | ----------- |
+   | `index.astro` | `/`         | `/en`       |
+   | `about.astro` | `/a-propos` | `/en/about` |
+
+   يظل المسار الأصلي `/about` يعمل أيضًا. لتقديم المسارات المترجمة فقط، راجع [إخفاء المسارات الأصلية](/ar/guides/hiding-original-routes/).
+
+</Steps>
+
+## الخطوات التالية
+
+- [ترجم عناوين URL](/ar/guides/translating-urls/) للمسارات الديناميكية مثل `/blog/[slug]`.
+- أضف [مبدّل اللغة](/ar/guides/language-switcher/) وروابط `hreflang`.
+- امنح كل لغة [صفحات الخطأ](/ar/guides/error-pages/) الخاصة بها.

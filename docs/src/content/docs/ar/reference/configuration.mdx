@@ -1,0 +1,103 @@
+---
+title: الإعدادات
+description: جميع خيارات تكامل astro-localized-routes.
+---
+
+```js title="astro.config.mjs"
+import { defineConfig } from "astro/config";
+import localizedRoutes from "astro-localized-routes";
+
+export default defineConfig({
+  integrations: [
+    localizedRoutes({
+      locales: ["fr", "en"],
+      defaultLocale: "fr",
+      routes: {
+        "/about": { fr: "/a-propos", en: "/about" },
+      },
+    }),
+  ],
+});
+```
+
+## `locales`
+
+**النوع:** `string[]` · **مطلوب**
+
+اللغات التي يدعمها موقعك. تُستخدم كبادئة مسار لكل لغة، مثل `/en/about`.
+
+## `defaultLocale`
+
+**النوع:** `string` · **مطلوب**
+
+اللغة التي تُقدَّم دون بادئة. يجب أن تكون إحدى قيم `locales`.
+
+## `routes`
+
+**النوع:** `Record<string, Record<Locale, string>>` · **مطلوب**
+
+مسار كل صفحة في كل لغة، مع استخدام مسار الصفحة مفتاحًا:
+
+```js
+routes: {
+  "/about": { fr: "/a-propos", en: "/about" },
+  "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+},
+```
+
+- تُكتب المسارات دون بادئة اللغة، إذ يضيفها التكامل.
+- يجب أن يستخدم المسار المعاملات نفسها التي تستخدمها صفحته.
+- القيمة الافتراضية للمسار `/` هي `/` لكل لغة.
+- تُتجاهل الشرطات المائلة في النهاية والمكررة.
+
+راجع [ترجمة عناوين URL للصفحات](/ar/guides/translating-urls/).
+
+## `prefixDefaultLocale`
+
+**النوع:** `boolean` · **القيمة الافتراضية:** `false`
+
+قدّم اللغة الافتراضية أيضًا تحت بادئتها، مثل `/fr/a-propos` بدلًا من `/a-propos`.
+
+## `missingRouteBehavior`
+
+**النوع:** `"error" | "warn" | "ignore" | "use_default" | ((route: string, locale: Locale) => "error" | "warn" | "ignore" | "use_default")` · **القيمة الافتراضية:** `"error"`
+
+ما يحدث عندما لا يكون لصفحة مسار في إحدى اللغات ضمن `routes`:
+
+- القيمة `"error"`: رمي خطأ.
+- القيمة `"warn"`: تسجيل تحذير، وعدم تقديم الصفحة بتلك اللغة.
+- القيمة `"ignore"`: عدم تقديم الصفحة بتلك اللغة.
+- القيمة `"use_default"`: استخدام المسار الأصلي للصفحة تحت بادئة اللغة.
+- دالة تتلقى مسار الصفحة واللغة، وتُرجع إحدى هذه القيم.
+
+راجع [الترجمات المفقودة](/ar/guides/missing-translations/).
+
+## `removeOriginalPageRoutes`
+
+**النوع:** `boolean` · **القيمة الافتراضية:** `false`
+
+أزل المسارات الأصلية للصفحات الموجودة في `src/pages`. تُرجع هذه المسارات 404، وتُحذف ملفاتها من البناء، ولا تتلقاها التكاملات الأخرى. أما المسارات التي لا تزال إحدى اللغات تستخدمها وصفحات الخطأ الجذرية فيُحتفظ بها.
+
+راجع [إخفاء المسارات الأصلية](/ar/guides/hiding-original-routes/).
+
+## `errorPages`
+
+**النوع:** `(404 | 500)[]` · **القيمة الافتراضية:** `[404, 500]`
+
+صفحات الخطأ التي تُنسخ لكل لغة، مثل `/en/404`. اضبطه على `[]` لتعطيل ذلك.
+
+راجع [صفحات الخطأ المترجمة](/ar/guides/error-pages/).
+
+## `crossIntegrationBehavior`
+
+**النوع:** `{ excludedIntegrations?: string[] }` · **القيمة الافتراضية:** `{}`
+
+كيفية تطبيق التوجيه على التكاملات الأخرى. يُدرج الخيار `excludedIntegrations` بالاسم التكاملاتِ التي يجب أن تتلقى المسارات والصفحات الأصلية في Astro دون ترشيح.
+
+راجع [خريطة الموقع والتكاملات الأخرى](/ar/guides/other-integrations/).
+
+## `routableExtensions`
+
+**النوع:** `(".astro" | ".md" | ".markdown" | ".html" | ".mdx" | ".mdoc")[]` · **القيمة الافتراضية:** `[".astro"]`
+
+امتدادات ملفات الصفحات التي تُترجم. لا تُترجم افتراضيًا إلا صفحات `.astro`، لأن أنواع الصفحات الأخرى لا تستطيع تكييف محتواها مع اللغة، حتى لو كانت عناوين URL الخاصة بها مترجمة.

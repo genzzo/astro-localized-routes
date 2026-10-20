@@ -1,0 +1,86 @@
+---
+title: الانتقال من i18n في Astro
+description: انقل موقعًا من نظام التوجيه متعدد اللغات المدمج في Astro إلى astro-localized-routes.
+---
+
+import { FileTree } from "@astrojs/starlight/components";
+
+يحلّ astro-localized-routes محلّ نظام التوجيه متعدد اللغات (i18n) المدمج في Astro: لا يمكن استخدام الاثنين معًا.
+
+## استبدل إعدادات i18n
+
+أزل الخيار `i18n` من إعدادات Astro، وأضف التكامل باللغات نفسها:
+
+```js title="astro.config.mjs" del={2-5} ins={7-11}
+export default defineConfig({
+  i18n: {
+    locales: ["fr", "en"],
+    defaultLocale: "fr",
+  },
+  integrations: [
+    localizedRoutes({
+      locales: ["fr", "en"],
+      defaultLocale: "fr",
+      routes: {},
+    }),
+  ],
+});
+```
+
+## ادمج نُسخ كل صفحة
+
+ادمج نُسخ كل صفحة في ملف واحد باسم محايد لغويًا. على سبيل المثال، هاتان الصفحتان:
+
+<FileTree>
+
+- src/pages/
+  - a-propos.astro
+  - en/
+    - about.astro
+
+</FileTree>
+
+تصبحان صفحة واحدة:
+
+<FileTree>
+
+- src/pages/
+  - about.astro
+
+</FileTree>
+
+انقل النص الذي يختلف بينهما إلى قاموس أو مجموعة محتوى (content collection)، واختره وفق اللغة الحالية.
+
+## أضف مسار كل صفحة
+
+أضف مسار كل صفحة في كل لغة إلى [`routes`](/ar/guides/translating-urls/):
+
+```js title="astro.config.mjs"
+routes: {
+  "/about": { fr: "/a-propos", en: "/about" },
+},
+```
+
+## استبدل Astro.currentLocale
+
+أصبحت قيمة `Astro.currentLocale` الآن `undefined`. استخدم [`getLocale`](/ar/guides/current-locale/) بدلًا منها:
+
+```astro del={2} ins={3-4}
+---
+const locale = Astro.currentLocale;
+import { getLocale } from "virtual:astro-localized-routes";
+const locale = getLocale(Astro);
+---
+```
+
+## استبدل الدوال المساعدة في astro:i18n
+
+لم يعد بالإمكان استخدام الدوال المساعدة في `astro:i18n`. للروابط إلى الصفحة الحالية في لغات أخرى، مثل `getRelativeLocaleUrl(locale, Astro.url.pathname)`، استخدم [`getAlternates`](/ar/guides/language-switcher/). وللروابط إلى صفحات أخرى، اكتب مساراتها المترجمة.
+
+## ما ليس له مقابل
+
+بعض خيارات نظام التوجيه متعدد اللغات في Astro غير متاحة:
+
+- الخيار `fallback`: استخدم [`missingRouteBehavior`](/ar/guides/missing-translations/) لتحديد ما يحدث عندما تكون صفحة مفقودة في إحدى اللغات.
+- الخيار `routing.redirectToDefaultLocale`: أعد توجيه `/` [في وسيطك الخاص](/ar/guides/hiding-original-routes/).
+- الخيار `domains`: تُقدَّم كل لغة تحت بادئة في المسار.

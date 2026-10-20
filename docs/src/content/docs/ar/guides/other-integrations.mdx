@@ -1,0 +1,58 @@
+---
+title: خريطة الموقع والتكاملات الأخرى
+description: تحكّم في المسارات التي تتلقاها التكاملات الأخرى مثل @astrojs/sitemap.
+---
+
+## ما تراه التكاملات الأخرى
+
+يمنح Astro كل تكامل قائمته الخاصة من المسارات والصفحات المبنية. ودون أي تعديل، سترى التكاملات المسارات التي يخفيها الخيار [`removeOriginalPageRoutes`](/ar/guides/hiding-original-routes/)، و[صفحات الخطأ المترجمة](/ar/guides/error-pages/).
+
+لمنع ذلك، يغلّف التكامل الخطّافين (hooks) `astro:routes:resolved` و`astro:build:done` الخاصين بالتكاملات الأخرى، ويزيل تلك المسارات قبل تمريرها إليها. أما مساراتك المترجمة فتُمرَّر كالمعتاد.
+
+## استخدام `@astrojs/sitemap`
+
+عند تفعيل `removeOriginalPageRoutes`، لا يُدرج `@astrojs/sitemap` سوى الصفحات المترجمة. ولا حاجة إلى أي إعداد آخر:
+
+```js title="astro.config.mjs"
+import { defineConfig } from "astro/config";
+import sitemap from "@astrojs/sitemap";
+import localizedRoutes from "astro-localized-routes";
+
+export default defineConfig({
+  site: "https://example.com",
+  integrations: [
+    localizedRoutes({
+      locales: ["fr", "en"],
+      defaultLocale: "fr",
+      routes: {
+        "/about": { fr: "/a-propos", en: "/about" },
+      },
+      removeOriginalPageRoutes: true,
+    }),
+    sitemap(),
+  ],
+});
+```
+
+تتضمن خريطة الموقع `/a-propos/` و`/en/about/`، لكنها لا تتضمن `/about/` ولا `/en/404/`.
+
+## استثناء تكامل
+
+تحتاج بعض التكاملات إلى المسارات والصفحات الأصلية في Astro. أدرجها بأسمائها في [`crossIntegrationBehavior.excludedIntegrations`](/ar/reference/configuration/#crossintegrationbehavior) لتمنحها كل شيء، دون ترشيح:
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  // ...
+  crossIntegrationBehavior: {
+    excludedIntegrations: ["my-integration"],
+  },
+});
+```
+
+:::caution
+تُحذف ملفات المسارات المُزالة من البناء في كل الأحوال. إذا احتاج تكامل مستثنى إلى تلك الملفات، فضعه قبل `localizedRoutes` في القائمة `integrations`، ليعمل أولًا.
+:::
+
+## وسيطك الخاص
+
+يعمل وسيط التكامل بعد وسيطك، لذا يمكن لوسيطك التعامل مع أمور مثل المصادقة أو إعادة التوجيه قبله.
