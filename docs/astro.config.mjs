@@ -9,6 +9,7 @@ export default defineConfig({
     starlight({
       title: "astro-localized-routes",
       description: "Translated URLs for every page of your Astro site, from a single page file.",
+      logo: { light: "../assets/logo-light.svg", dark: "../assets/logo-dark.svg" },
       social: [
         {
           icon: "github",

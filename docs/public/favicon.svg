@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <title>astro-localized-routes</title>
+  <defs>
+    <clipPath id="tile">
+      <rect width="128" height="128" rx="28"/>
+    </clipPath>
+    <linearGradient id="glass" x1="50" y1="40" x2="84" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#DCD4FF"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="128" height="128" rx="28" fill="#F4F2FB"/>
+
+  <g clip-path="url(#tile)">
+    <!-- one page in -->
+    <path d="M-2 83L48.6 64.4" stroke="#1E1B2E" stroke-width="4"/>
+
+    <!-- every locale out -->
+    <path d="M75.76 58.16L128 50V64L77.44 61.04Z" fill="#7B61FF"/>
+    <path d="M77.44 61.04L128 64V78L79.12 63.92Z" fill="#FF4F8B"/>
+    <path d="M79.12 63.92L128 78V92L80.8 66.8Z" fill="#FFB020"/>
+  </g>
+
+  <!-- prism -->
+  <path d="M64 38L92 86H36Z" fill="url(#glass)"/>
+  <path d="M48.6 64.4L75.76 58.16L80.8 66.8Z" fill="#1E1B2E" opacity="0.12"/>
+  <path d="M64 38L92 86H36Z" stroke="#1E1B2E" stroke-width="3.5" stroke-linejoin="round"/>
+</svg>
