@@ -3,16 +3,31 @@ title: Compatibility
 description: Supported Astro versions, output modes, adapters and page file types.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
-
 ## Astro versions
 
 Astro 6 and 7 are supported.
 
 ## Output modes
 
+Both static and server output are supported, and pages can be prerendered or rendered on demand. Localized routes are built the same way as the page they point to.
+
+With server output, the [localized error pages](/guides/error-pages/) are always rendered on demand. With static output, your host serves the error pages.
+
 ## Adapters
 
+Any adapter works. With static output and an adapter, add `export const prerender = false` to an error page if you want the middleware to select the localized copy.
+
+## URL options
+
+[`getAlternates`](/reference/runtime-api/#getalternates) follows your Astro config:
+
+- `base` is included in the paths.
+- `trailingSlash` and `build.format` decide whether paths end with a slash.
+
 ## Page file types
+
+Only `.astro` pages are localized by default. [`routableExtensions`](/reference/configuration/#routableextensions) can add `.md`, `.markdown`, `.mdx`, `.mdoc` and `.html` pages, but these can't adapt their content to the locale, so they show the same content under every localized URL.
+
+## Astro's i18n
+
+This integration replaces Astro's built-in i18n routing, and can't be used together with the `i18n` option. `Astro.currentLocale` is `undefined` and `astro:i18n` can't be used. See [migrating from Astro's i18n](/guides/migrating-from-astro-i18n/).

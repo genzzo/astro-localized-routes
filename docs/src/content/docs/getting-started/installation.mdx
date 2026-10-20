@@ -38,8 +38,30 @@ Install the package with your package manager:
   </TabItem>
 </Tabs>
 
-Then add it to your Astro config. The [quick start](/getting-started/quick-start/) walks you through a complete setup.
+Then add it to the `integrations` of your Astro config:
+
+```js title="astro.config.mjs" ins={2,6-10}
+import { defineConfig } from "astro/config";
+import localizedRoutes from "astro-localized-routes";
+
+export default defineConfig({
+  integrations: [
+    localizedRoutes({
+      locales: ["fr", "en"],
+      defaultLocale: "fr",
+      routes: {},
+    }),
+  ],
+});
+```
+
+The [quick start](/getting-started/quick-start/) walks you through a complete setup.
 
 ## Requirements
 
-- Astro 6 or 7
+- Astro 6 or 7.
+- No `i18n` option in your Astro config. This integration handles routing on its own, see [migrating from Astro's i18n](/guides/migrating-from-astro-i18n/).
+
+## Types
+
+The types of `virtual:astro-localized-routes`, such as the `Locale` type, are generated from your config. Run `astro dev`, `astro build` or `astro sync` once after installing so that your editor knows about them.

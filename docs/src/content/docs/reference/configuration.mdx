@@ -3,42 +3,101 @@ title: Configuration
 description: Every option of the astro-localized-routes integration.
 ---
 
-:::note[Draft]
-This page is an outline. Descriptions and examples are coming soon.
-:::
+```js title="astro.config.mjs"
+import { defineConfig } from "astro/config";
+import localizedRoutes from "astro-localized-routes";
+
+export default defineConfig({
+  integrations: [
+    localizedRoutes({
+      locales: ["fr", "en"],
+      defaultLocale: "fr",
+      routes: {
+        "/about": { fr: "/a-propos", en: "/about" },
+      },
+    }),
+  ],
+});
+```
 
 ## `locales`
 
 **Type:** `string[]` · **Required**
 
+The locales supported by your site. They're used as the path prefix of each locale, for example `/en/about`.
+
 ## `defaultLocale`
 
 **Type:** `string` · **Required**
+
+The locale that is served without a prefix. It must be one of `locales`.
 
 ## `routes`
 
 **Type:** `Record<string, Record<Locale, string>>` · **Required**
 
+The path of each page in each locale, keyed by the route of the page:
+
+```js
+routes: {
+  "/about": { fr: "/a-propos", en: "/about" },
+  "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+},
+```
+
+- Paths are written without the locale prefix, which the integration adds.
+- A path must use the same parameters as its page.
+- `/` defaults to `/` for every locale.
+- Trailing and doubled slashes are ignored.
+
+See [translating page URLs](/guides/translating-urls/).
+
 ## `prefixDefaultLocale`
 
 **Type:** `boolean` · **Default:** `false`
 
+Also serve the default locale under its prefix, for example `/fr/a-propos` instead of `/a-propos`.
+
 ## `missingRouteBehavior`
 
-**Type:** `"error" | "warn" | "ignore" | "use_default" | ((route, locale) => ...)` · **Default:** `"error"`
+**Type:** `"error" | "warn" | "ignore" | "use_default" | ((route: string, locale: Locale) => "error" | "warn" | "ignore" | "use_default")` · **Default:** `"error"`
+
+What happens when a page has no path for a locale in `routes`:
+
+- `"error"`: throw an error.
+- `"warn"`: log a warning, and don't serve the page in that locale.
+- `"ignore"`: don't serve the page in that locale.
+- `"use_default"`: use the original path of the page under the locale prefix.
+- A function that receives the route of the page and the locale, and returns one of these values.
+
+See [missing translations](/guides/missing-translations/).
 
 ## `removeOriginalPageRoutes`
 
 **Type:** `boolean` · **Default:** `false`
 
+Remove the original routes of the pages in `src/pages`. They return a 404, their build files are deleted, and other integrations don't receive them. Routes that a locale still uses and the root error pages are kept.
+
+See [hiding the original routes](/guides/hiding-original-routes/).
+
 ## `errorPages`
 
 **Type:** `(404 | 500)[]` · **Default:** `[404, 500]`
+
+The error pages to copy for every locale, for example `/en/404`. Set to `[]` to disable this.
+
+See [localized error pages](/guides/error-pages/).
 
 ## `crossIntegrationBehavior`
 
 **Type:** `{ excludedIntegrations?: string[] }` · **Default:** `{}`
 
+How the routing applies to other integrations. `excludedIntegrations` lists the integrations, by name, that should receive Astro's original routes and pages without filtering.
+
+See [sitemap and other integrations](/guides/other-integrations/).
+
 ## `routableExtensions`
 
 **Type:** `(".astro" | ".md" | ".markdown" | ".html" | ".mdx" | ".mdoc")[]` · **Default:** `[".astro"]`
+
+The file extensions of the pages to localize. Only `.astro` pages are localized by default, because other page types can't adapt their content to the locale, even if their URLs are translated.

@@ -3,14 +3,84 @@ title: Migrating from Astro's i18n
 description: Move a site from Astro's built-in i18n routing to astro-localized-routes.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
+import { FileTree } from "@astrojs/starlight/components";
 
-## Remove the i18n config
+astro-localized-routes replaces Astro's built-in i18n routing: the two can't be used together.
+
+## Replace the i18n config
+
+Remove the `i18n` option from your Astro config, and add the integration with the same locales:
+
+```js title="astro.config.mjs" del={2-5} ins={7-11}
+export default defineConfig({
+  i18n: {
+    locales: ["fr", "en"],
+    defaultLocale: "fr",
+  },
+  integrations: [
+    localizedRoutes({
+      locales: ["fr", "en"],
+      defaultLocale: "fr",
+      routes: {},
+    }),
+  ],
+});
+```
+
+## Merge the copies of each page
+
+Merge the copies of each page into a single file with a language-neutral name. For example, these two pages:
+
+<FileTree>
+
+- src/pages/
+  - a-propos.astro
+  - en/
+    - about.astro
+
+</FileTree>
+
+become one page:
+
+<FileTree>
+
+- src/pages/
+  - about.astro
+
+</FileTree>
+
+Move the text that differs between them into a dictionary or a content collection, and pick it with the current locale.
+
+## Add the path of each page
+
+Add the path of each page in each locale to [`routes`](/guides/translating-urls/):
+
+```js title="astro.config.mjs"
+routes: {
+  "/about": { fr: "/a-propos", en: "/about" },
+},
+```
 
 ## Replace Astro.currentLocale
 
+`Astro.currentLocale` is now `undefined`. Use [`getLocale`](/guides/current-locale/) instead:
+
+```astro del={2} ins={3-4}
+---
+const locale = Astro.currentLocale;
+import { getLocale } from "virtual:astro-localized-routes";
+const locale = getLocale(Astro);
+---
+```
+
 ## Replace the astro:i18n helpers
 
-## Merge duplicated page files
+The helpers of `astro:i18n` can't be used anymore. For links to the current page in other locales, such as `getRelativeLocaleUrl(locale, Astro.url.pathname)`, use [`getAlternates`](/guides/language-switcher/). For links to other pages, write their localized paths.
+
+## What has no equivalent
+
+Some options of Astro's i18n routing aren't available:
+
+- `fallback`: use [`missingRouteBehavior`](/guides/missing-translations/) to decide what happens when a page is missing in a locale.
+- `routing.redirectToDefaultLocale`: redirect `/` [in your own middleware](/guides/hiding-original-routes/).
+- `domains`: each locale is served under a path prefix.

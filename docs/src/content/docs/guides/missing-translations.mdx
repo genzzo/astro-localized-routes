@@ -3,10 +3,52 @@ title: Missing translations
 description: Decide what happens when a page has no path for a locale with missingRouteBehavior.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
+Every page in `src/pages` needs a path for each locale in [`routes`](/reference/configuration/#routes), except `/`. [`missingRouteBehavior`](/reference/configuration/#missingroutebehavior) decides what happens when one is missing.
 
 ## The four behaviors
 
+| Value           | What happens                                                                                   |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| `"error"`       | The default. Astro stops with an [error](/reference/errors/#missing-route-for-pattern).        |
+| `"warn"`        | A warning is logged and the page isn't available in that locale.                               |
+| `"ignore"`      | The page isn't available in that locale, without a warning.                                    |
+| `"use_default"` | The page uses its original path under the locale prefix, for example `/en/about` for `/about`. |
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+  },
+  // `/contact` has no entry, so it's served at `/contact` and `/en/contact`
+  missingRouteBehavior: "use_default",
+});
+```
+
 ## Deciding page by page
+
+Pass a function to choose a behavior for each page and locale. It receives the route of the page and the locale:
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["en", "fr", "de"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { en: "/about", fr: "/a-propos", de: "/ueber-uns" },
+  },
+  missingRouteBehavior: (route, locale) => {
+    // the blog keeps its paths in every locale
+    if (route === "/blog") return "use_default";
+    // posts are only written in French
+    if (route === "/blog/[...slug]") return locale === "fr" ? "use_default" : "ignore";
+    return "error";
+  },
+});
+```
+
+The function must return one of the four values, any other value is an [error](/reference/errors/#invalid-missingroutebehavior).
+
+## Links to the missing locales
+
+[`getAlternates`](/guides/language-switcher/) leaves out the locales a page doesn't exist in, so a language switcher doesn't link to them.

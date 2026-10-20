@@ -3,10 +3,6 @@ title: Runtime API
 description: The helpers exported by virtual:astro-localized-routes.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
-
 ```ts
 import {
   getLocale,
@@ -17,12 +13,74 @@ import {
 } from "virtual:astro-localized-routes";
 ```
 
+The module is typed from your config. Its types are generated when you run `astro dev`, `astro build` or `astro sync`.
+
 ## `getLocale()`
+
+**Type:** `(context: { routePattern: string; originPathname: string; request: Request }) => Locale`
+
+Returns the locale of the current route. Pass `Astro` in pages and components, or the context in endpoints and middleware.
+
+```astro
+---
+import { getLocale } from "virtual:astro-localized-routes";
+
+const locale = getLocale(Astro);
+---
+
+<html lang={locale}>
+```
+
+- Routes created by the integration return their own locale.
+- Error pages and any other route return the locale the requested path starts with (for example, `en` for `/en/missing` or `/en/feed.xml`), or the default locale.
+- Server islands and actions return the locale of the page that called them.
+
+See [reading the current locale](/guides/current-locale/).
 
 ## `getAlternates()`
 
+**Type:** `(context: { routePattern: string; params: Record<string, string | undefined> }) => { locale: Locale; path: string }[]`
+
+Returns the path of the current page in every locale it exists in, the current locale included, in the order of `locales`. Pass `Astro` in pages and components, or the context in endpoints and middleware.
+
+```astro
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+---
+
+{
+  getAlternates(Astro).map(({ locale, path }) => (
+    <link rel="alternate" hreflang={locale} href={new URL(path, Astro.site)} />
+  ))
+}
+```
+
+- Paths include `base`, and end with a slash when Astro adds one to its own links.
+- Dynamic routes use the current parameters for every locale.
+- Error pages, server islands, actions and the routes of pages that aren't localized return an empty list.
+
+See [language switcher and hreflang](/guides/language-switcher/).
+
 ## `locales`
+
+**Type:** `readonly Locale[]`
+
+The `locales` of your config.
 
 ## `defaultLocale`
 
+**Type:** `Locale`
+
+The `defaultLocale` of your config.
+
 ## `Locale`
+
+**Type:** `"fr" | "en"`, from your config
+
+The union of your locales, for example to type a dictionary:
+
+```ts
+import type { Locale } from "virtual:astro-localized-routes";
+
+const labels: Record<Locale, string> = { fr: "Français", en: "English" };
+```

@@ -3,18 +3,71 @@ title: Why astro-localized-routes
 description: The problem with translated URLs in Astro, and how this integration solves it.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
+import { FileTree } from "@astrojs/starlight/components";
 
 ## The problem
 
-Astro's built-in i18n gives every page the same path in every locale. Translating the path itself (`/a-propos` in French, `/en/about` in English) means duplicating the page file for each locale.
+Astro's built-in i18n routing follows your folders: each locale gets its own folder in `src/pages`, and each URL comes from a file name. Translating a URL itself, like `/a-propos` in French and `/en/about` in English, means a separate page file for every locale:
+
+<FileTree>
+
+- src/pages/
+  - a-propos.astro
+  - en/
+    - about.astro
+
+</FileTree>
+
+These files usually share the same layout and logic, so every change has to be made once per locale. The alternative is a catch-all route such as `[...slug].astro` with your own table of translated paths, which takes over Astro's routing.
 
 ## The idea
 
-Write each page once in `src/pages`, then map it to a path for each locale in your Astro config.
+With astro-localized-routes, you write each page once, with a language-neutral file name, and give it a path for each locale in your Astro config:
+
+<FileTree>
+
+- src/pages/
+  - index.astro
+  - about.astro
+  - blog/
+    - [slug].astro
+
+</FileTree>
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+    "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  },
+});
+```
+
+The integration registers a route for each locale that points to the same page file:
+
+| Page                | `fr` (default)    | `en`              |
+| ------------------- | ----------------- | ----------------- |
+| `index.astro`       | `/`               | `/en`             |
+| `about.astro`       | `/a-propos`       | `/en/about`       |
+| `blog/[slug].astro` | `/journal/[slug]` | `/en/blog/[slug]` |
+
+Each page then reads its locale with [`getLocale`](/reference/runtime-api/#getlocale) and renders the right content. Nothing is generated or copied into your project.
+
+## What else you get
+
+- Links to the same page in other locales with [`getAlternates`](/reference/runtime-api/#getalternates), for a language switcher or `hreflang` links.
+- A 404 and 500 page for every locale.
+- An option to remove the original routes, so only the localized ones are served and listed in your sitemap.
+- Types for your locales, generated from your config.
 
 ## Is it for you?
 
-When to use it, and when Astro's built-in i18n is enough.
+It's a good fit when your URLs must be translated, for readers or for search engines, and your pages share the same template in every locale.
+
+If the same path in every locale is fine for you (`/fr/about` and `/en/about`), Astro's built-in i18n routing is enough. The two can't be combined: this integration doesn't use Astro's `i18n` config, so [migrate from it](/guides/migrating-from-astro-i18n/) if you already use it.
+
+:::caution[Work in progress]
+astro-localized-routes may still have breaking changes between releases. Feedback and issues are welcome on [GitHub](https://github.com/genzzo/astro-localized-routes/issues).
+:::
