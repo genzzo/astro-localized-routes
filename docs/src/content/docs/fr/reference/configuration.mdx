@@ -1,0 +1,103 @@
+---
+title: Configuration
+description: Toutes les options de l'intégration astro-localized-routes.
+---
+
+```js title="astro.config.mjs"
+import { defineConfig } from "astro/config";
+import localizedRoutes from "astro-localized-routes";
+
+export default defineConfig({
+  integrations: [
+    localizedRoutes({
+      locales: ["fr", "en"],
+      defaultLocale: "fr",
+      routes: {
+        "/about": { fr: "/a-propos", en: "/about" },
+      },
+    }),
+  ],
+});
+```
+
+## `locales`
+
+**Type :** `string[]` · **Obligatoire**
+
+Les langues prises en charge par votre site. Elles servent de préfixe de chemin pour chaque langue, par exemple `/en/about`.
+
+## `defaultLocale`
+
+**Type :** `string` · **Obligatoire**
+
+La langue servie sans préfixe. Elle doit faire partie de `locales`.
+
+## `routes`
+
+**Type :** `Record<string, Record<Locale, string>>` · **Obligatoire**
+
+Le chemin de chaque page dans chaque langue, indexé par la route de la page :
+
+```js
+routes: {
+  "/about": { fr: "/a-propos", en: "/about" },
+  "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+},
+```
+
+- Les chemins s'écrivent sans le préfixe de langue, que l'intégration ajoute.
+- Un chemin doit utiliser les mêmes paramètres que sa page.
+- `/` vaut `/` par défaut pour chaque langue.
+- Les barres obliques finales et doublées sont ignorées.
+
+Voir [Traduire les URL des pages](/fr/guides/translating-urls/).
+
+## `prefixDefaultLocale`
+
+**Type :** `boolean` · **Par défaut :** `false`
+
+Sert aussi la langue par défaut sous son préfixe, par exemple `/fr/a-propos` au lieu de `/a-propos`.
+
+## `missingRouteBehavior`
+
+**Type :** `"error" | "warn" | "ignore" | "use_default" | ((route: string, locale: Locale) => "error" | "warn" | "ignore" | "use_default")` · **Par défaut :** `"error"`
+
+Ce qui se passe quand une page n'a pas de chemin pour une langue dans `routes` :
+
+- `"error"` : lève une erreur.
+- `"warn"` : journalise un avertissement et ne sert pas la page dans cette langue.
+- `"ignore"` : ne sert pas la page dans cette langue.
+- `"use_default"` : utilise le chemin d'origine de la page sous le préfixe de langue.
+- Une fonction qui reçoit la route de la page et la langue, et renvoie l'une de ces valeurs.
+
+Voir [Traductions manquantes](/fr/guides/missing-translations/).
+
+## `removeOriginalPageRoutes`
+
+**Type :** `boolean` · **Par défaut :** `false`
+
+Supprime les routes d'origine des pages de `src/pages`. Elles renvoient une 404, leurs fichiers de build sont supprimés, et les autres intégrations ne les reçoivent pas. Les routes qu'une langue utilise encore et les pages d'erreur à la racine sont conservées.
+
+Voir [Masquer les routes d'origine](/fr/guides/hiding-original-routes/).
+
+## `errorPages`
+
+**Type :** `(404 | 500)[]` · **Par défaut :** `[404, 500]`
+
+Les pages d'erreur à copier pour chaque langue, par exemple `/en/404`. Définissez-le sur `[]` pour désactiver cette fonctionnalité.
+
+Voir [Pages d'erreur localisées](/fr/guides/error-pages/).
+
+## `crossIntegrationBehavior`
+
+**Type :** `{ excludedIntegrations?: string[] }` · **Par défaut :** `{}`
+
+La façon dont le routage s'applique aux autres intégrations. `excludedIntegrations` liste, par leur nom, les intégrations qui doivent recevoir les routes et les pages d'origine d'Astro sans filtrage.
+
+Voir [Sitemap et autres intégrations](/fr/guides/other-integrations/).
+
+## `routableExtensions`
+
+**Type :** `(".astro" | ".md" | ".markdown" | ".html" | ".mdx" | ".mdoc")[]` · **Par défaut :** `[".astro"]`
+
+Les extensions de fichier des pages à localiser. Seules les pages `.astro` sont localisées par défaut, car les autres types de pages ne peuvent pas adapter leur contenu à la langue, même si leurs URL sont traduites.

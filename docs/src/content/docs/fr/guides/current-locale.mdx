@@ -1,0 +1,65 @@
+---
+title: Lire la langue actuelle
+description: Obtenez la langue de la page, de l'endpoint, de l'îlot de serveur ou de l'action en cours avec getLocale.
+---
+
+## Dans les pages et les composants
+
+Importez [`getLocale`](/fr/reference/runtime-api/#getlocale) depuis `virtual:astro-localized-routes` et passez-lui `Astro` :
+
+```astro title="src/layouts/Layout.astro"
+---
+import { getLocale } from "virtual:astro-localized-routes";
+
+const locale = getLocale(Astro); // "fr" | "en"
+---
+
+<html lang={locale}>
+  <slot />
+</html>
+```
+
+La valeur renvoyée est typée avec le type `Locale` de votre configuration, vous pouvez donc l'utiliser comme clé d'un dictionnaire sans conversion de type.
+
+## Dans les endpoints et le middleware
+
+Les endpoints et le middleware reçoivent un contexte au lieu d'`Astro`. Passez le contexte :
+
+```ts title="src/pages/[lang]/rss.xml.ts"
+import type { APIRoute } from "astro";
+import { getLocale } from "virtual:astro-localized-routes";
+
+export const GET: APIRoute = (context) => {
+  const locale = getLocale(context); // "en" for `/en/rss.xml`
+  // ...
+};
+```
+
+```ts title="src/middleware.ts"
+import { defineMiddleware } from "astro:middleware";
+import { getLocale } from "virtual:astro-localized-routes";
+
+export const onRequest = defineMiddleware((context, next) => {
+  context.locals.locale = getLocale(context);
+  return next();
+});
+```
+
+## Comment la langue est déterminée
+
+- **Les routes localisées** renvoient leur propre langue : `/a-propos` renvoie `fr` et `/en/about` renvoie `en`. Cela inclut les pages d'erreur localisées, comme `/en/404`.
+- **Toute autre route** renvoie la langue par laquelle commence son chemin, ou la langue par défaut. Par exemple, `/en/rss.xml` servi par `src/pages/[lang]/rss.xml.ts` renvoie `en`, et `/rss.xml` renvoie `fr`.
+- **Les pages d'erreur à la racine** utilisent aussi le chemin demandé : `/en/missing` renvoie `en`, même après qu'Astro l'a réécrit en `/404`.
+- **Les îlots de serveur et les actions** renvoient la langue de la page qui les a appelés, d'après l'URL de la page dans le navigateur.
+
+## Quand votre middleware réécrit vers une autre langue
+
+Les îlots de serveur et les actions s'appuient sur l'URL dans le navigateur. Quand votre propre middleware réécrit une requête vers une autre langue, par exemple `/` vers `/en` selon l'en-tête `Accept-Language`, l'URL dans le navigateur ne correspond plus à la page. Dans ce cas, passez vous-même la langue, comme prop de l'îlot ou dans les données d'entrée de l'action :
+
+```astro
+<Island server:defer locale={getLocale(Astro)} />
+```
+
+## `Astro.currentLocale` et `astro:i18n`
+
+Cette intégration n'utilise pas la configuration `i18n` d'Astro, donc `Astro.currentLocale` vaut `undefined` et le module `astro:i18n` ne peut pas être utilisé. Utilisez `getLocale` à la place.

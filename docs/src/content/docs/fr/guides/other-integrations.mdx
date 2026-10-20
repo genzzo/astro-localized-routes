@@ -1,0 +1,58 @@
+---
+title: Sitemap et autres intégrations
+description: Contrôlez les routes que reçoivent les autres intégrations comme @astrojs/sitemap.
+---
+
+## Ce que voient les autres intégrations
+
+Astro donne à chaque intégration sa propre liste de routes et de pages générées. Sans aucune modification, elles verraient les routes que [`removeOriginalPageRoutes`](/fr/guides/hiding-original-routes/) masque, ainsi que les [pages d'erreur localisées](/fr/guides/error-pages/).
+
+Pour éviter cela, l'intégration enveloppe les hooks `astro:routes:resolved` et `astro:build:done` des autres intégrations, et retire ces routes avant de les leur transmettre. Vos routes localisées sont transmises normalement.
+
+## Utiliser @astrojs/sitemap
+
+Avec `removeOriginalPageRoutes` activé, `@astrojs/sitemap` ne liste que les pages localisées. Aucune autre configuration n'est nécessaire :
+
+```js title="astro.config.mjs"
+import { defineConfig } from "astro/config";
+import sitemap from "@astrojs/sitemap";
+import localizedRoutes from "astro-localized-routes";
+
+export default defineConfig({
+  site: "https://example.com",
+  integrations: [
+    localizedRoutes({
+      locales: ["fr", "en"],
+      defaultLocale: "fr",
+      routes: {
+        "/about": { fr: "/a-propos", en: "/about" },
+      },
+      removeOriginalPageRoutes: true,
+    }),
+    sitemap(),
+  ],
+});
+```
+
+Le sitemap inclut `/a-propos/` et `/en/about/`, mais pas `/about/` ni `/en/404/`.
+
+## Exclure une intégration
+
+Certaines intégrations ont besoin des routes et des pages d'origine d'Astro. Listez-les par leur nom dans [`crossIntegrationBehavior.excludedIntegrations`](/fr/reference/configuration/#crossintegrationbehavior) pour leur donner tout, sans filtrage :
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  // ...
+  crossIntegrationBehavior: {
+    excludedIntegrations: ["my-integration"],
+  },
+});
+```
+
+:::caution
+Les fichiers des routes retirées sont supprimés du build dans tous les cas. Si une intégration exclue a besoin de ces fichiers, placez-la avant `localizedRoutes` dans vos `integrations`, pour qu'elle s'exécute en premier.
+:::
+
+## Votre propre middleware
+
+Le middleware de l'intégration s'exécute après le vôtre, donc votre middleware peut gérer des choses comme l'authentification ou les redirections avant lui.

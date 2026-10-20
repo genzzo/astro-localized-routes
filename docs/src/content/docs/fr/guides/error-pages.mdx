@@ -1,0 +1,56 @@
+---
+title: Pages d'erreur localisées
+description: Servez une page 404 et une page 500 dans chaque langue.
+---
+
+import { FileTree } from "@astrojs/starlight/components";
+
+## Ce qui est généré
+
+Quand votre projet a une page `404.astro` ou `500.astro`, chaque langue reçoit sa propre copie :
+
+<FileTree>
+
+- src/pages/
+  - 404.astro
+  - 500.astro
+
+</FileTree>
+
+| Page        | `fr` (par défaut) | `en`      |
+| ----------- | ----------------- | --------- |
+| `404.astro` | `/404`            | `/en/404` |
+| `500.astro` | `/500`            | `/en/500` |
+
+Le chemin d'une page d'erreur ne peut pas être traduit : c'est toujours `/{locale}/404`, car le middleware et les hébergeurs statiques doivent la trouver à cet endroit. Les pages d'erreur à la racine sont toujours conservées, et servent pour les erreurs en dehors de tout préfixe de langue.
+
+## Comment la bonne page est affichée
+
+Astro affiche toujours la page d'erreur à la racine. Quand le chemin demandé commence par une langue, le middleware de l'intégration affiche à la place la copie de cette langue, avec le bon statut. Par exemple, `/en/missing` affiche `/en/404` avec un statut 404, et [`getLocale`](/fr/guides/current-locale/) y renvoie `en`.
+
+Visiter directement une copie localisée, comme `/en/404`, renvoie aussi un statut 404.
+
+## Sortie statique et serveur
+
+- **Sortie serveur :** les pages d'erreur localisées sont toujours rendues à la demande, pour que le middleware puisse sélectionner la bonne.
+- **Sortie statique :** votre hébergeur sert directement la page d'erreur et décide laquelle est affichée. Consultez la documentation de votre hébergeur pour savoir comment il choisit une page 404.
+- **Sortie statique avec un adaptateur :** ajoutez `export const prerender = false` à la page d'erreur si vous voulez que le middleware la gère.
+
+## Choisir les pages d'erreur
+
+[`errorPages`](/fr/reference/configuration/#errorpages) liste les pages d'erreur à localiser. Ne gardez que la page 404, ou définissez-le sur `[]` pour désactiver cette fonctionnalité :
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  // ...
+  errorPages: [404],
+});
+```
+
+## Utiliser vos propres pages d'erreur localisées
+
+Si votre projet a déjà une page comme `src/pages/en/404.astro`, elle entre en conflit avec la copie générée. Définissez `errorPages: []` pour utiliser vos propres pages.
+
+## Autres intégrations
+
+Comme les pages d'erreur à la racine, les copies localisées ne sont pas destinées à être listées. Les autres intégrations ne les reçoivent pas dans leurs routes et leurs pages, donc `@astrojs/sitemap` ne liste pas `/en/404`. Voir [Sitemap et autres intégrations](/fr/guides/other-integrations/).

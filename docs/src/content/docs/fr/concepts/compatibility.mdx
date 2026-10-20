@@ -1,0 +1,33 @@
+---
+title: Compatibilité
+description: Versions d'Astro, modes de sortie, adaptateurs et types de fichiers de page pris en charge.
+---
+
+## Versions d'Astro
+
+Astro 6 et 7 sont pris en charge.
+
+## Modes de sortie
+
+Les sorties statique et serveur sont toutes deux prises en charge, et les pages peuvent être prérendues ou rendues à la demande. Les routes localisées sont générées de la même façon que la page vers laquelle elles pointent.
+
+Avec une sortie serveur, les [pages d'erreur localisées](/fr/guides/error-pages/) sont toujours rendues à la demande. Avec une sortie statique, c'est votre hébergeur qui sert les pages d'erreur.
+
+## Adaptateurs
+
+Tous les adaptateurs fonctionnent. Avec une sortie statique et un adaptateur, ajoutez `export const prerender = false` à une page d'erreur si vous voulez que le middleware sélectionne la copie localisée.
+
+## Options d'URL
+
+[`getAlternates`](/fr/reference/runtime-api/#getalternates) suit votre configuration Astro :
+
+- `base` est inclus dans les chemins.
+- `trailingSlash` et `build.format` déterminent si les chemins se terminent par une barre oblique.
+
+## Types de fichiers de page
+
+Seules les pages `.astro` sont localisées par défaut. [`routableExtensions`](/fr/reference/configuration/#routableextensions) peut ajouter les pages `.md`, `.markdown`, `.mdx`, `.mdoc` et `.html`, mais celles-ci ne peuvent pas adapter leur contenu à la langue : elles affichent donc le même contenu sous chaque URL localisée.
+
+## L'i18n d'Astro
+
+Cette intégration remplace le routage i18n intégré d'Astro et ne peut pas être utilisée avec l'option `i18n`. `Astro.currentLocale` vaut `undefined` et `astro:i18n` ne peut pas être utilisé. Voir [Migrer depuis l'i18n d'Astro](/fr/guides/migrating-from-astro-i18n/).

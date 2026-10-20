@@ -1,0 +1,86 @@
+---
+title: Sélecteur de langue et hreflang
+description: Créez des liens vers la page actuelle dans les autres langues avec getAlternates.
+---
+
+[`getAlternates`](/fr/reference/runtime-api/#getalternates) renvoie le chemin de la page actuelle dans chaque langue où elle existe, langue actuelle comprise, dans l'ordre de vos `locales` :
+
+```astro
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+
+// on `/a-propos`: [{ locale: "fr", path: "/a-propos/" }, { locale: "en", path: "/en/about/" }]
+const alternates = getAlternates(Astro);
+---
+```
+
+## Créer un sélecteur de langue
+
+```astro title="src/components/LanguageSwitcher.astro"
+---
+import { getAlternates, getLocale } from "virtual:astro-localized-routes";
+
+const labels = { fr: "Français", en: "English" };
+const current = getLocale(Astro);
+---
+
+<nav aria-label="Language">
+  <ul>
+    {
+      getAlternates(Astro).map(({ locale, path }) => (
+        <li>
+          <a
+            href={path}
+            hreflang={locale}
+            lang={locale}
+            aria-current={locale === current ? "page" : undefined}
+          >
+            {labels[locale]}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+```
+
+Une langue dans laquelle la page n'existe pas, par exemple à cause de [`missingRouteBehavior: "ignore"`](/fr/guides/missing-translations/), n'apparaît pas dans la liste.
+
+## Ajouter des liens hreflang
+
+Les liens `hreflang` nécessitent des URL absolues, donc définissez [`site`](https://docs.astro.build/fr/reference/configuration-reference/#site) dans votre configuration Astro. Sans cette option, `new URL` lève une erreur :
+
+```astro title="src/layouts/Layout.astro"
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+
+const alternates = getAlternates(Astro);
+---
+
+<head>
+  {
+    alternates.map(({ locale, path }) => (
+      <link rel="alternate" hreflang={locale} href={new URL(path, Astro.site)} />
+    ))
+  }
+</head>
+```
+
+## Chemin de base et barres obliques finales
+
+Les chemins sont prêts à être utilisés dans des liens :
+
+- Ils incluent votre [`base`](https://docs.astro.build/fr/reference/configuration-reference/#base), par exemple `/docs/en/about/`.
+- Ils se terminent par une barre oblique quand Astro en ajoute une à ses propres liens : avec `trailingSlash: "always"`, ou avec `"ignore"` et `build.format: "directory"`, qui sont les valeurs par défaut d'Astro.
+
+## Routes dynamiques et slugs traduits
+
+Les routes dynamiques utilisent les paramètres actuels pour chaque langue, donc `/journal/mon-article` obtient `/en/blog/mon-article/`.
+
+Si vos slugs sont traduits, ou si une entrée n'existe pas dans chaque langue (par exemple, un article uniquement en français), construisez ces liens vous-même pour l'instant. Sinon, ils mènent à des pages qui n'ont pas été générées.
+
+## Quand la liste est vide
+
+Les pages d'erreur, les îlots de serveur, les actions et les routes des pages non localisées renvoient une liste vide.
+
+Avec [`removeOriginalPageRoutes`](/fr/reference/configuration/#removeoriginalpageroutes) désactivé, une route d'origine qu'aucune langue n'utilise, par exemple `/about` à côté de `/a-propos`, renvoie les versions alternatives de sa page, qui n'incluent pas son propre chemin.

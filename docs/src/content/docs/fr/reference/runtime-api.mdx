@@ -1,0 +1,86 @@
+---
+title: API d'exécution
+description: Les fonctions utilitaires exportées par virtual:astro-localized-routes.
+---
+
+```ts
+import {
+  getLocale,
+  getAlternates,
+  locales,
+  defaultLocale,
+  type Locale,
+} from "virtual:astro-localized-routes";
+```
+
+Le module est typé à partir de votre configuration. Ses types sont générés quand vous exécutez `astro dev`, `astro build` ou `astro sync`.
+
+## `getLocale()`
+
+**Type :** `(context: { routePattern: string; originPathname: string; request: Request }) => Locale`
+
+Renvoie la langue de la route actuelle. Passez `Astro` dans les pages et les composants, ou le contexte dans les endpoints et le middleware.
+
+```astro
+---
+import { getLocale } from "virtual:astro-localized-routes";
+
+const locale = getLocale(Astro);
+---
+
+<html lang={locale}>
+```
+
+- Les routes créées par l'intégration renvoient leur propre langue.
+- Les pages d'erreur et toute autre route renvoient la langue par laquelle commence le chemin demandé (par exemple, `en` pour `/en/missing` ou `/en/feed.xml`), ou la langue par défaut.
+- Les îlots de serveur et les actions renvoient la langue de la page qui les a appelés.
+
+Voir [Lire la langue actuelle](/fr/guides/current-locale/).
+
+## `getAlternates()`
+
+**Type :** `(context: { routePattern: string; params: Record<string, string | undefined> }) => { locale: Locale; path: string }[]`
+
+Renvoie le chemin de la page actuelle dans chaque langue où elle existe, langue actuelle comprise, dans l'ordre de `locales`. Passez `Astro` dans les pages et les composants, ou le contexte dans les endpoints et le middleware.
+
+```astro
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+---
+
+{
+  getAlternates(Astro).map(({ locale, path }) => (
+    <link rel="alternate" hreflang={locale} href={new URL(path, Astro.site)} />
+  ))
+}
+```
+
+- Les chemins incluent `base`, et se terminent par une barre oblique quand Astro en ajoute une à ses propres liens.
+- Les routes dynamiques utilisent les paramètres actuels pour chaque langue.
+- Les pages d'erreur, les îlots de serveur, les actions et les routes des pages non localisées renvoient une liste vide.
+
+Voir [Sélecteur de langue et hreflang](/fr/guides/language-switcher/).
+
+## `locales`
+
+**Type :** `readonly Locale[]`
+
+Les `locales` de votre configuration.
+
+## `defaultLocale`
+
+**Type :** `Locale`
+
+Le `defaultLocale` de votre configuration.
+
+## `Locale`
+
+**Type :** `"fr" | "en"`, d'après votre configuration
+
+L'union de vos langues, par exemple pour typer un dictionnaire :
+
+```ts
+import type { Locale } from "virtual:astro-localized-routes";
+
+const labels: Record<Locale, string> = { fr: "Français", en: "English" };
+```

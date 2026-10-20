@@ -1,0 +1,86 @@
+---
+title: Démarrage rapide
+description: Créez un site en français et en anglais avec des URL traduites en cinq minutes.
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+Ce guide crée un petit site en français et en anglais, avec le français comme langue par défaut.
+
+<Steps>
+
+1. [Installez l'intégration](/fr/getting-started/installation/), puis configurez vos langues et le chemin de chaque page :
+
+   ```js title="astro.config.mjs"
+   import { defineConfig } from "astro/config";
+   import localizedRoutes from "astro-localized-routes";
+
+   export default defineConfig({
+     integrations: [
+       localizedRoutes({
+         locales: ["fr", "en"],
+         defaultLocale: "fr",
+         routes: {
+           "/about": { fr: "/a-propos", en: "/about" },
+         },
+       }),
+     ],
+   });
+   ```
+
+   La page d'accueil n'a pas besoin d'entrée : `/` est servi à `/` pour chaque langue, soit `/` en français et `/en` en anglais.
+
+2. Créez vos pages dans `src/pages` comme d'habitude : `index.astro` et `about.astro`, avec une mise en page dans `src/layouts/Layout.astro`. Nommez-les comme vous le souhaitez, les URL viennent de votre configuration.
+
+3. Lisez la langue actuelle dans votre mise en page pour définir la langue de la page :
+
+   ```astro title="src/layouts/Layout.astro"
+   ---
+   import { getLocale } from "virtual:astro-localized-routes";
+
+   const locale = getLocale(Astro);
+   ---
+
+   <html lang={locale}>
+     <body>
+       <slot />
+     </body>
+   </html>
+   ```
+
+4. Affichez le contenu de chaque page dans la langue actuelle. Un petit dictionnaire suffit pour commencer :
+
+   ```astro title="src/pages/about.astro"
+   ---
+   import { getLocale } from "virtual:astro-localized-routes";
+   import Layout from "../layouts/Layout.astro";
+
+   const content = {
+     fr: { title: "À propos", text: "Bonjour !" },
+     en: { title: "About", text: "Hello!" },
+   };
+   const { title, text } = content[getLocale(Astro)];
+   ---
+
+   <Layout>
+     <h1>{title}</h1>
+     <p>{text}</p>
+   </Layout>
+   ```
+
+5. Démarrez le serveur de développement avec `astro dev` et visitez vos pages :
+
+   | Page          | `fr`        | `en`        |
+   | ------------- | ----------- | ----------- |
+   | `index.astro` | `/`         | `/en`       |
+   | `about.astro` | `/a-propos` | `/en/about` |
+
+   La route d'origine `/about` fonctionne toujours, elle aussi. Pour ne servir que les routes localisées, voir [Masquer les routes d'origine](/fr/guides/hiding-original-routes/).
+
+</Steps>
+
+## Étapes suivantes
+
+- [Traduisez les URL](/fr/guides/translating-urls/) des routes dynamiques comme `/blog/[slug]`.
+- Ajoutez un [sélecteur de langue](/fr/guides/language-switcher/) et des liens `hreflang`.
+- Donnez à chaque langue ses propres [pages d'erreur](/fr/guides/error-pages/).
