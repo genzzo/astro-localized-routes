@@ -17,9 +17,6 @@ export default defineConfig({
           href: "https://github.com/genzzo/astro-localized-routes",
         },
       ],
-      editLink: {
-        baseUrl: "https://github.com/genzzo/astro-localized-routes/edit/main/docs/",
-      },
       // English is served at the root (`/guides/...`), the other locales under their prefix
       // (`/fr/guides/...`); untranslated pages fall back to English with a notice
       defaultLocale: "root",
