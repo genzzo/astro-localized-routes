@@ -1,0 +1,84 @@
+---
+title: astro-localized-routes
+description: Translated URLs for every page of your Astro site, from a single page file.
+template: splash
+hero:
+  tagline: The way Astro should be handling i18n in the first place. Write each page once, and give it a URL in every language.
+  actions:
+    - text: Get started
+      link: /getting-started/quick-start/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/genzzo/astro-localized-routes
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, FileTree } from "@astrojs/starlight/components";
+
+:::caution[Work in progress]
+astro-localized-routes may still have breaking changes between releases. Feedback and issues are welcome on GitHub.
+:::
+
+## One page file, a URL in every language
+
+<CardGrid>
+<Card title="With Astro's built-in i18n" icon="document">
+A translated URL needs its own copy of the page.
+
+<FileTree>
+
+- src/pages/
+  - a-propos.astro
+  - en/
+    - about.astro
+
+</FileTree>
+
+</Card>
+<Card title="With astro-localized-routes" icon="approve-check">
+One page, and a path for each locale in your config.
+
+<FileTree>
+
+- src/pages/
+  - about.astro
+
+</FileTree>
+
+</Card>
+</CardGrid>
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+    "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  },
+});
+```
+
+| Page                | `fr` (default)    | `en`              |
+| ------------------- | ----------------- | ----------------- |
+| `index.astro`       | `/`               | `/en`             |
+| `about.astro`       | `/a-propos`       | `/en/about`       |
+| `blog/[slug].astro` | `/journal/[slug]` | `/en/blog/[slug]` |
+
+## Features
+
+<CardGrid stagger>
+  <Card title="Translated URLs" icon="translate">
+    Give every page, dynamic routes included, its own path in each locale.
+  </Card>
+  <Card title="Typed helpers" icon="seti:typescript">
+    `getLocale` and `getAlternates` are typed from your config.
+  </Card>
+  <Card title="Localized error pages" icon="warning">
+    Every locale gets its own 404 and 500 page.
+  </Card>
+  <Card title="Works with other integrations" icon="puzzle">
+    Sitemaps and other integrations only see the localized routes.
+  </Card>
+</CardGrid>

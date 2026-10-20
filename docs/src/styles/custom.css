@@ -1,0 +1,10 @@
+/* Arabic pages use IBM Plex Sans Arabic, which also covers Latin text such as API names */
+:root[lang="ar"] {
+  --sl-font: "IBM Plex Sans Arabic";
+}
+
+/* file trees show paths, which read left to right like code blocks, so Arabic pages don't move
+   their slashes (e.g. `src/pages/` shown as `/src/pages`) */
+starlight-file-tree {
+  direction: ltr;
+}

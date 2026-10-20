@@ -1,0 +1,44 @@
+---
+title: Configuration
+description: Every option of the astro-localized-routes integration.
+---
+
+:::note[Draft]
+This page is an outline. Descriptions and examples are coming soon.
+:::
+
+## `locales`
+
+**Type:** `string[]` · **Required**
+
+## `defaultLocale`
+
+**Type:** `string` · **Required**
+
+## `routes`
+
+**Type:** `Record<string, Record<Locale, string>>` · **Required**
+
+## `prefixDefaultLocale`
+
+**Type:** `boolean` · **Default:** `false`
+
+## `missingRouteBehavior`
+
+**Type:** `"error" | "warn" | "ignore" | "use_default" | ((route, locale) => ...)` · **Default:** `"error"`
+
+## `removeOriginalPageRoutes`
+
+**Type:** `boolean` · **Default:** `false`
+
+## `errorPages`
+
+**Type:** `(404 | 500)[]` · **Default:** `[404, 500]`
+
+## `crossIntegrationBehavior`
+
+**Type:** `{ excludedIntegrations?: string[] }` · **Default:** `{}`
+
+## `routableExtensions`
+
+**Type:** `(".astro" | ".md" | ".markdown" | ".html" | ".mdx" | ".mdoc")[]` · **Default:** `[".astro"]`

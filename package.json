@@ -34,6 +34,8 @@
     "test": "vitest",
     "typecheck": "tsc --noEmit",
     "typecheck:playgrounds": "pnpm -r --filter './playgrounds/*' astro check",
+    "docs:dev": "pnpm --filter astro-localized-routes-docs dev",
+    "docs:build": "pnpm --filter astro-localized-routes-docs build",
     "lint": "oxlint --deny-warnings",
     "lint:fix": "oxlint --deny-warnings --fix",
     "format:check": "oxfmt --check && prettier --check \"**/*.astro\"",

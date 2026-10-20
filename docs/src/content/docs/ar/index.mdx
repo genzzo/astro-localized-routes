@@ -1,0 +1,84 @@
+---
+title: astro-localized-routes
+description: عناوين URL مترجمة لكل صفحة في موقع Astro الخاص بك، انطلاقًا من ملف صفحة واحد.
+template: splash
+hero:
+  tagline: الطريقة التي كان يجب أن يتعامل بها Astro مع تعدد اللغات منذ البداية. اكتب كل صفحة مرة واحدة، وامنحها عنوان URL بكل لغة.
+  actions:
+    - text: ابدأ الآن
+      link: /ar/getting-started/quick-start/
+      icon: left-arrow
+    - text: عرض على GitHub
+      link: https://github.com/genzzo/astro-localized-routes
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, FileTree } from "@astrojs/starlight/components";
+
+:::caution[قيد التطوير]
+قد تتضمن الإصدارات القادمة من astro-localized-routes تغييرات غير متوافقة مع ما سبقها. نرحب بملاحظاتكم وبلاغاتكم على GitHub.
+:::
+
+## ملف واحد لكل صفحة، وعنوان URL بكل لغة
+
+<CardGrid>
+<Card title="مع نظام i18n المدمج في Astro" icon="document">
+يتطلب كل عنوان URL مترجم نسخة خاصة به من الصفحة.
+
+<FileTree>
+
+- src/pages/
+  - a-propos.astro
+  - en/
+    - about.astro
+
+</FileTree>
+
+</Card>
+<Card title="مع astro-localized-routes" icon="approve-check">
+صفحة واحدة، ومسار لكل لغة في إعداداتك.
+
+<FileTree>
+
+- src/pages/
+  - about.astro
+
+</FileTree>
+
+</Card>
+</CardGrid>
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+    "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  },
+});
+```
+
+| الصفحة              | `fr` (الافتراضية) | `en`              |
+| ------------------- | ----------------- | ----------------- |
+| `index.astro`       | `/`               | `/en`             |
+| `about.astro`       | `/a-propos`       | `/en/about`       |
+| `blog/[slug].astro` | `/journal/[slug]` | `/en/blog/[slug]` |
+
+## الميزات
+
+<CardGrid stagger>
+  <Card title="عناوين URL مترجمة" icon="translate">
+    امنح كل صفحة، بما فيها المسارات الديناميكية، مسارها الخاص بكل لغة.
+  </Card>
+  <Card title="دوال محددة الأنواع" icon="seti:typescript">
+    الدالتان `getLocale` و`getAlternates` تستمدان أنواعهما من إعداداتك.
+  </Card>
+  <Card title="صفحات خطأ مترجمة" icon="warning">
+    لكل لغة صفحتا 404 و500 خاصتان بها.
+  </Card>
+  <Card title="متوافق مع التكاملات الأخرى" icon="puzzle">
+    لا ترى خرائط الموقع والتكاملات الأخرى سوى المسارات المترجمة.
+  </Card>
+</CardGrid>
