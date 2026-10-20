@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/logo-dark.svg">
+    <img src="./assets/logo-light.svg" alt="" width="128" height="128">
+  </picture>
+</p>
+
 # astro-localized-routes
 
 The way Astro should be handling i18n in the first place.
