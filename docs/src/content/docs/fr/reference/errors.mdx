@@ -1,0 +1,72 @@
+---
+title: Messages d'erreur
+description: Ce que signifie chaque erreur levée par astro-localized-routes, et comment la corriger.
+---
+
+L'intégration vérifie votre configuration au démarrage d'Astro, et s'arrête avec l'une de ces erreurs quand quelque chose ne va pas.
+
+## Missing route for pattern
+
+```
+Missing route for pattern: /about, locale: en
+```
+
+Une page n'a pas de chemin pour une langue dans [`routes`](/fr/reference/configuration/#routes). Ajoutez le chemin manquant :
+
+```js
+routes: {
+  "/about": { fr: "/a-propos", en: "/about" },
+},
+```
+
+Ou choisissez un autre [`missingRouteBehavior`](/fr/guides/missing-translations/). Avec `"warn"`, le même message est journalisé sous forme d'avertissement.
+
+## Invalid missingRouteBehavior
+
+```
+Invalid missingRouteBehavior: skip
+```
+
+La fonction passée à [`missingRouteBehavior`](/fr/reference/configuration/#missingroutebehavior) a renvoyé une valeur autre que `"error"`, `"warn"`, `"ignore"` ou `"use_default"`.
+
+## Localized pattern conflict
+
+```
+Localized pattern conflict: pattern "/blog" for file "about.astro" and locale "fr" conflicts with existing pattern "/blog" for file "blog.astro"
+```
+
+Un chemin localisé est déjà utilisé par une autre page, ou par une autre langue. Les chemins sont comparés selon leur forme, donc `/journal/[slug]` et `/journal/[id]` entrent aussi en conflit. Donnez un autre chemin à l'un d'eux.
+
+Cela arrive aussi quand votre projet a une page au chemin d'une page d'erreur localisée, comme `src/pages/en/404.astro`. Définissez [`errorPages: []`](/fr/guides/error-pages/) pour utiliser vos propres pages.
+
+## Localized patterns are not allowed to use error page paths
+
+```
+Localized patterns are not allowed to use error page paths: pattern "/404" for file "missing.astro" and locale "fr"
+```
+
+Une page est associée à `/404` ou `/500`, qui sont réservés aux [pages d'erreur](/fr/guides/error-pages/). Utilisez un autre chemin.
+
+## Localized patterns must use the same parameters as their page
+
+```
+Localized patterns must use the same parameters as their page: pattern "/journal/[titre]" for file "blog/[slug].astro" and locale "fr" doesn't match "/blog/[slug]"
+```
+
+Un chemin renomme, ajoute ou retire un paramètre. Gardez les paramètres de la page, dans n'importe quel ordre : `/journal/[slug]` pour `/blog/[slug]`. Un paramètre rest comme `[...slug]` doit rester un paramètre rest.
+
+## Duplicate routes for page
+
+```
+Duplicate routes for page "/about": "/about" and "/about/"
+```
+
+La même page est configurée deux fois dans [`routes`](/fr/reference/configuration/#routes). Les barres obliques finales et doublées sont ignorées, donc `/about` et `/about/` désignent la même page. Gardez une seule entrée.
+
+## Missing parameter for the route
+
+```
+Missing parameter "slug" for the route "/journal/[slug]"
+```
+
+Cette erreur est levée par [`getAlternates`](/fr/reference/runtime-api/#getalternates) quand il manque un paramètre de la route dans le contexte qu'elle reçoit. Passez `Astro`, ou le contexte complet d'un endpoint ou du middleware, plutôt qu'un objet que vous construisez vous-même.

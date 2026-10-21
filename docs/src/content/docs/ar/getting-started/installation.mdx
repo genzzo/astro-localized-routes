@@ -1,0 +1,67 @@
+---
+title: التثبيت
+description: أضف astro-localized-routes إلى مشروع Astro 6 أو 7.
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+ثبّت الحزمة باستخدام مدير الحزم الذي تعتمده:
+
+<Tabs syncKey="pkg">
+  <TabItem label="npm">
+
+    ```sh
+    npm install astro-localized-routes
+    ```
+
+  </TabItem>
+  <TabItem label="pnpm">
+
+    ```sh
+    pnpm add astro-localized-routes
+    ```
+
+  </TabItem>
+  <TabItem label="Yarn">
+
+    ```sh
+    yarn add astro-localized-routes
+    ```
+
+  </TabItem>
+  <TabItem label="Bun">
+
+    ```sh
+    bun add astro-localized-routes
+    ```
+
+  </TabItem>
+</Tabs>
+
+ثم أضفها إلى القائمة `integrations` في إعدادات Astro:
+
+```js title="astro.config.mjs" ins={2,6-10}
+import { defineConfig } from "astro/config";
+import localizedRoutes from "astro-localized-routes";
+
+export default defineConfig({
+  integrations: [
+    localizedRoutes({
+      locales: ["fr", "en"],
+      defaultLocale: "fr",
+      routes: {},
+    }),
+  ],
+});
+```
+
+يرشدك [دليل البدء السريع](/ar/getting-started/quick-start/) خطوة بخطوة إلى إعداد كامل.
+
+## المتطلبات
+
+- الإصدار 6 أو 7 من Astro.
+- عدم وجود الخيار `i18n` في إعدادات Astro. يتولى هذا التكامل التوجيه بنفسه؛ راجع [الانتقال من i18n في Astro](/ar/guides/migrating-from-astro-i18n/).
+
+## الأنواع
+
+تُولَّد أنواع الوحدة `virtual:astro-localized-routes`، مثل النوع `Locale`، من إعداداتك. شغّل `astro dev` أو `astro build` أو `astro sync` مرة واحدة بعد التثبيت ليتعرّف عليها محررك.

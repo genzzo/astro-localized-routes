@@ -1,0 +1,43 @@
+---
+title: Fonctionnement
+description: Ce que fait l'intégration au démarrage d'Astro, lors des requêtes et lors du build.
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+astro-localized-routes ne génère ni ne copie aucune page. L'intégration enregistre des routes supplémentaires pour les pages que vous avez déjà, et filtre ce que voit le reste d'Astro.
+
+## Au démarrage d'Astro
+
+<Steps>
+
+1. L'intégration liste les pages de `src/pages` qui ont l'une des [`routableExtensions`](/fr/reference/configuration/#routableextensions).
+
+2. Pour chaque page et chaque langue, elle trouve le chemin localisé dans [`routes`](/fr/reference/configuration/#routes), ou applique [`missingRouteBehavior`](/fr/reference/configuration/#missingroutebehavior), puis ajoute le préfixe de langue.
+
+3. Elle vérifie chaque chemin pour détecter les [erreurs](/fr/reference/errors/) : chemins manquants, conflits avec d'autres pages, chemins des pages d'erreur et paramètres.
+
+4. Elle enregistre chaque chemin localisé comme une nouvelle route qui pointe vers le même fichier de page, avec `injectRoute` d'Astro. Les pages d'erreur reçoivent une copie pour chaque langue.
+
+5. Elle crée `virtual:astro-localized-routes`, avec la langue de chaque route et les chemins de chaque page, et génère ses types.
+
+</Steps>
+
+Cela se passe de la même façon en développement et lors d'un build, donc `astro dev` sert les mêmes routes que votre site en production.
+
+## Lors d'une requête
+
+L'intégration ajoute un middleware quand [`removeOriginalPageRoutes`](/fr/reference/configuration/#removeoriginalpageroutes) est activé ou quand les pages d'erreur sont localisées. Il s'exécute après votre propre middleware, et :
+
+- renvoie une 404 pour les routes d'origine masquées,
+- affiche la copie localisée d'une page d'erreur quand le chemin demandé commence par une langue, avec le bon statut.
+
+[`getLocale`](/fr/reference/runtime-api/#getlocale) et [`getAlternates`](/fr/reference/runtime-api/#getalternates) lisent la route qu'Astro a reconnue, donc elles fonctionnent dans les pages, les endpoints, le middleware, les îlots de serveur et les actions.
+
+## Autres intégrations
+
+Astro donne à chaque intégration sa propre liste de routes. L'intégration enveloppe les hooks `astro:routes:resolved` et `astro:build:done` des autres intégrations, pour qu'elles ne reçoivent ni les routes masquées ni les pages d'erreur localisées. Voir [Sitemap et autres intégrations](/fr/guides/other-integrations/).
+
+## Lors du build
+
+Astro génère chaque route, y compris les routes masquées. Une fois le build terminé, l'intégration supprime les fichiers des routes masquées, ainsi que les dossiers qu'ils laissent vides, pour qu'un hébergeur statique ne les serve pas.

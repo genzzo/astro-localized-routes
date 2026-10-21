@@ -1,0 +1,54 @@
+---
+title: Traductions manquantes
+description: Décidez de ce qui se passe quand une page n'a pas de chemin pour une langue avec missingRouteBehavior.
+---
+
+Chaque page de `src/pages` a besoin d'un chemin pour chaque langue dans [`routes`](/fr/reference/configuration/#routes), sauf `/`. [`missingRouteBehavior`](/fr/reference/configuration/#missingroutebehavior) décide de ce qui se passe quand il en manque un.
+
+## Les quatre comportements
+
+| Valeur          | Ce qui se passe                                                                                          |
+| --------------- | -------------------------------------------------------------------------------------------------------- |
+| `"error"`       | La valeur par défaut. Astro s'arrête avec une [erreur](/fr/reference/errors/#missing-route-for-pattern). |
+| `"warn"`        | Un avertissement est journalisé et la page n'est pas disponible dans cette langue.                       |
+| `"ignore"`      | La page n'est pas disponible dans cette langue, sans avertissement.                                      |
+| `"use_default"` | La page utilise son chemin d'origine sous le préfixe de langue, par exemple `/en/about` pour `/about`.   |
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+  },
+  // `/contact` has no entry, so it's served at `/contact` and `/en/contact`
+  missingRouteBehavior: "use_default",
+});
+```
+
+## Décider page par page
+
+Passez une fonction pour choisir un comportement pour chaque page et chaque langue. Elle reçoit la route de la page et la langue :
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["en", "fr", "de"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { en: "/about", fr: "/a-propos", de: "/ueber-uns" },
+  },
+  missingRouteBehavior: (route, locale) => {
+    // the blog keeps its paths in every locale
+    if (route === "/blog") return "use_default";
+    // posts are only written in French
+    if (route === "/blog/[...slug]") return locale === "fr" ? "use_default" : "ignore";
+    return "error";
+  },
+});
+```
+
+La fonction doit renvoyer l'une des quatre valeurs, toute autre valeur est une [erreur](/fr/reference/errors/#invalid-missingroutebehavior).
+
+## Liens vers les langues manquantes
+
+[`getAlternates`](/fr/guides/language-switcher/) exclut les langues dans lesquelles une page n'existe pas, donc un sélecteur de langue ne propose pas de lien vers elles.

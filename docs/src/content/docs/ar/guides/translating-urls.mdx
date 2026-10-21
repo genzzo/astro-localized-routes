@@ -1,0 +1,93 @@
+---
+title: ترجمة عناوين URL للصفحات
+description: اربط كل صفحة بمسار لكل لغة باستخدام الخيار routes.
+---
+
+## خريطة المسارات
+
+يربط الخيار [`routes`](/ar/reference/configuration/#routes) كل صفحة بمسارها في كل لغة. المفاتيح هي مسارات صفحاتك، كما يبنيها Astro من `src/pages`:
+
+| الملف                         | المسار         |
+| ----------------------------- | -------------- |
+| `src/pages/about.astro`       | `/about`       |
+| `src/pages/blog/index.astro`  | `/blog`        |
+| `src/pages/blog/[slug].astro` | `/blog/[slug]` |
+
+القيم هي مسارات كل لغة، دون بادئة اللغة:
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en", "de"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about", de: "/ueber-uns" },
+    "/blog": { fr: "/journal", en: "/blog", de: "/blog" },
+  },
+});
+```
+
+تُقدَّم اللغة الافتراضية على مسارها كما هو، وكل لغة أخرى تحت بادئتها:
+
+| الصفحة             | `fr` (الافتراضية) | `en`        | `de`            |
+| ------------------ | ----------------- | ----------- | --------------- |
+| `about.astro`      | `/a-propos`       | `/en/about` | `/de/ueber-uns` |
+| `blog/index.astro` | `/journal`        | `/en/blog`  | `/de/blog`      |
+
+تحتاج كل صفحة إلى مسار لكل لغة. وعند غياب أحدها، يفشل البناء افتراضيًا؛ راجع [الترجمات المفقودة](/ar/guides/missing-translations/) لتغيير ذلك.
+
+تُتجاهل الشرطات المائلة في النهاية والشرطات المائلة المكررة، لذا فإن `/about/` هو نفسه `/about`. وتهيئة الصفحة نفسها مرتين، مثلًا بالصيغتين `/about` و`/about/`، تُعدّ خطأً.
+
+## المسارات الديناميكية والمعاملات
+
+تُترجم المسارات الديناميكية بالطريقة نفسها. يجب أن يستخدم المسار المعاملات نفسها التي تستخدمها صفحته:
+
+```js title="astro.config.mjs"
+routes: {
+  "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  "/docs/[...path]": { fr: "/documentation/[...path]", en: "/docs/[...path]" },
+},
+```
+
+تحتفظ المعاملات بأسمائها، لأن صفحتك تقرأها بأسمائها، ويجب أن يبقى معامل rest مثل `[...path]` معامل rest. فاستخدام `/journal/[titre]` للمسار `/blog/[slug]` يُعدّ [خطأً](/ar/reference/errors/#localized-patterns-must-use-the-same-parameters-as-their-page).
+
+قيم المعاملات هي نفسها في كل اللغات: يعرض `/journal/mon-article` و`/en/blog/mon-article` الصفحة نفسها، مع ضبط `slug` على `mon-article`. وفي البناء الثابت، تُنفَّذ الدالة `getStaticPaths` لكل مسار مترجم، وتُرجع المسارات نفسها لها جميعًا.
+
+:::note
+القيم المترجمة للمعامل، مثل `/journal/mon-article` و`/en/blog/my-article`، غير مدعومة بعد.
+:::
+
+## الصفحة الرئيسية
+
+يُقدَّم المسار `/` على `/` لكل لغة، لذا لا تحتاج إلى تهيئته: تكون الصفحة الرئيسية على `/` في اللغة الافتراضية، وعلى `/en` بالإنجليزية. ومع ذلك، يمكنك منحها مسارًا آخر:
+
+```js title="astro.config.mjs"
+routes: {
+  "/": { fr: "/", en: "/home" },
+},
+```
+
+## إضافة بادئة إلى اللغة الافتراضية
+
+تُقدَّم اللغة الافتراضية دون بادئة. ومع الخيار [`prefixDefaultLocale`](/ar/reference/configuration/#prefixdefaultlocale)، تحصل هي أيضًا على بادئة:
+
+```js title="astro.config.mjs" ins={4}
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  prefixDefaultLocale: true,
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+  },
+});
+```
+
+| الصفحة        | `fr` (الافتراضية) | `en`        |
+| ------------- | ----------------- | ----------- |
+| `index.astro` | `/fr`             | `/en`       |
+| `about.astro` | `/fr/a-propos`    | `/en/about` |
+
+لا تزال المسارات الأصلية، `/` و`/about`، تُقدَّم. لإزالتها، وإعادة توجيه `/` إلى لغة ما، راجع [إخفاء المسارات الأصلية](/ar/guides/hiding-original-routes/).
+
+## التعارضات
+
+لا يمكن أن يكون المسار المترجم مسارًا تستخدمه بالفعل صفحة أخرى أو لغة أخرى. على سبيل المثال، يفشل ربط `/about` بالمسار `/blog` بالفرنسية إذا كان `src/pages/blog.astro` موجودًا. كما تحتفظ صفحات الخطأ بمساراتها الخاصة: لا يمكن ربط أي صفحة بالمسار `/404` أو `/500`. راجع [رسائل الخطأ](/ar/reference/errors/) لكل حالة.

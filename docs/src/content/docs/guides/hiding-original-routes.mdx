@@ -3,14 +3,50 @@ title: Hiding the original routes
 description: Serve only the localized routes with removeOriginalPageRoutes.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
-
 ## Why hide them
+
+By default, the routes Astro creates from `src/pages` are kept. With a French site where `about.astro` is served at `/a-propos`, the original `/about` route still serves the same page, and appears in your sitemap.
+
+This is useful when the file names of your pages are in another language than your default locale: you name the page `about.astro`, and only want `/a-propos` and `/en/about` to exist.
+
+## Removing the original routes
+
+Enable [`removeOriginalPageRoutes`](/reference/configuration/#removeoriginalpageroutes):
+
+```js title="astro.config.mjs" ins={8}
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+    "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  },
+  removeOriginalPageRoutes: true,
+});
+```
 
 ## What happens to the original routes
 
+- They return a 404. In a static build, their files are deleted from the output.
+- Other integrations, such as `@astrojs/sitemap`, only receive the localized routes. See [sitemap and other integrations](/guides/other-integrations/).
+- A route that a locale still uses is kept. Here, `/` stays because it's also the French home page.
+- The root error pages, `/404` and `/500`, are always kept, because Astro needs them.
+
 ## Redirecting the root path
 
+With both [`prefixDefaultLocale`](/reference/configuration/#prefixdefaultlocale) and `removeOriginalPageRoutes` enabled, nothing is served at `/`. Redirect it in your own middleware, which runs before the integration's:
+
+```ts title="src/middleware.ts"
+import { defineMiddleware } from "astro:middleware";
+
+export const onRequest = defineMiddleware((context, next) => {
+  if (context.url.pathname === "/") return context.redirect("/fr/");
+  return next();
+});
+```
+
+This works in development and for pages rendered on demand.
+
 ## Static hosts
+
+A static site has no middleware once it's deployed. The files of the original routes are removed from the build, so your host returns its 404 page for them. To redirect `/` to a locale, configure the redirect at your host or CDN.

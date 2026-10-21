@@ -1,0 +1,65 @@
+---
+title: قراءة اللغة الحالية
+description: احصل على لغة الصفحة أو نقطة النهاية أو جزيرة الخادم أو الإجراء الحالي باستخدام getLocale.
+---
+
+## في الصفحات والمكوّنات
+
+استورد الدالة [`getLocale`](/ar/reference/runtime-api/#getlocale) من `virtual:astro-localized-routes` ومرّر إليها `Astro`:
+
+```astro title="src/layouts/Layout.astro"
+---
+import { getLocale } from "virtual:astro-localized-routes";
+
+const locale = getLocale(Astro); // "fr" | "en"
+---
+
+<html lang={locale}>
+  <slot />
+</html>
+```
+
+القيمة المُرجَعة من النوع `Locale` المستمد من إعداداتك، لذا يمكنك استخدامها مفتاحًا في قاموس دون تحويل للنوع (cast).
+
+## في نقاط النهاية والوسيط
+
+تتلقى نقاط النهاية (endpoints) والوسيط (middleware) سياقًا (context) بدلًا من `Astro`. مرّر هذا السياق:
+
+```ts title="src/pages/[lang]/rss.xml.ts"
+import type { APIRoute } from "astro";
+import { getLocale } from "virtual:astro-localized-routes";
+
+export const GET: APIRoute = (context) => {
+  const locale = getLocale(context); // "en" for `/en/rss.xml`
+  // ...
+};
+```
+
+```ts title="src/middleware.ts"
+import { defineMiddleware } from "astro:middleware";
+import { getLocale } from "virtual:astro-localized-routes";
+
+export const onRequest = defineMiddleware((context, next) => {
+  context.locals.locale = getLocale(context);
+  return next();
+});
+```
+
+## كيف تُحدَّد اللغة
+
+- **المسارات المترجمة** تُرجع لغتها الخاصة: يُرجع `/a-propos` القيمة `fr`، ويُرجع `/en/about` القيمة `en`. ويشمل ذلك صفحات الخطأ المترجمة، مثل `/en/404`.
+- **أي مسار آخر** يُرجع اللغة التي يبدأ بها مساره، أو اللغة الافتراضية. على سبيل المثال، يُرجع `/en/rss.xml` الذي يقدّمه `src/pages/[lang]/rss.xml.ts` القيمة `en`، ويُرجع `/rss.xml` القيمة `fr`.
+- **صفحات الخطأ الجذرية** تستخدم المسار المطلوب أيضًا: يُرجع `/en/missing` القيمة `en`، حتى بعد أن يعيد Astro كتابته إلى `/404`.
+- **جزر الخادم والإجراءات** تُرجع لغة الصفحة التي استدعتها، انطلاقًا من عنوان URL الصفحة في المتصفح.
+
+## عندما يعيد وسيطك كتابة الطلب إلى لغة أخرى
+
+تعتمد جزر الخادم (server islands) والإجراءات (actions) على عنوان URL في المتصفح. عندما يعيد وسيطك كتابة طلب إلى لغة أخرى، مثل `/` إلى `/en` بناءً على الترويسة `Accept-Language`، لا يعود عنوان URL في المتصفح مطابقًا للصفحة. في هذه الحالة، مرّر اللغة بنفسك، كخاصية (prop) للجزيرة أو ضمن مدخلات الإجراء:
+
+```astro
+<Island server:defer locale={getLocale(Astro)} />
+```
+
+## الخاصية `Astro.currentLocale` والوحدة `astro:i18n`
+
+لا يستخدم هذا التكامل الإعداد `i18n` في Astro، لذا تكون قيمة `Astro.currentLocale` هي `undefined`، ولا يمكن استخدام الوحدة `astro:i18n`. استخدم `getLocale` بدلًا من ذلك.

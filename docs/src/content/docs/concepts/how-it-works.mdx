@@ -1,16 +1,43 @@
 ---
 title: How it works
-description: What the integration does in development, at build time and at request time.
+description: What the integration does when Astro starts, at request time and at build time.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
+import { Steps } from "@astrojs/starlight/components";
 
-## In development
+astro-localized-routes doesn't generate or copy any page. It registers more routes for the pages you already have, and filters what the rest of Astro sees.
+
+## When Astro starts
+
+<Steps>
+
+1. The integration lists the pages in `src/pages` with one of the [`routableExtensions`](/reference/configuration/#routableextensions).
+
+2. For each page and locale, it finds the localized path in [`routes`](/reference/configuration/#routes), or applies [`missingRouteBehavior`](/reference/configuration/#missingroutebehavior), and adds the locale prefix.
+
+3. It checks every path for [errors](/reference/errors/): missing paths, conflicts with other pages, error page paths and parameters.
+
+4. It registers each localized path as a new route that points to the same page file, with Astro's `injectRoute`. Error pages get a copy for each locale.
+
+5. It creates `virtual:astro-localized-routes`, with the locale of each route and the paths of each page, and generates its types.
+
+</Steps>
+
+This happens the same way in development and for a build, so `astro dev` serves the same routes as your production site.
+
+## At request time
+
+The integration adds a middleware when [`removeOriginalPageRoutes`](/reference/configuration/#removeoriginalpageroutes) is enabled or when error pages are localized. It runs after your own middleware, and:
+
+- returns a 404 for the original routes that are hidden,
+- renders the localized copy of an error page when the requested path starts with a locale, with the right status.
+
+[`getLocale`](/reference/runtime-api/#getlocale) and [`getAlternates`](/reference/runtime-api/#getalternates) read the route that Astro matched, so they work in pages, endpoints, middleware, server islands and actions.
+
+## Other integrations
+
+Astro gives every integration its own list of routes. The integration wraps the `astro:routes:resolved` and `astro:build:done` hooks of the other integrations, so they don't receive the hidden routes or the localized error pages. See [sitemap and other integrations](/guides/other-integrations/).
 
 ## At build time
 
-## The middleware
-
-## How other integrations are filtered
+Astro builds every route, including the hidden ones. Once the build is done, the integration deletes the files of the hidden routes, and the folders they leave empty, so a static host doesn't serve them.

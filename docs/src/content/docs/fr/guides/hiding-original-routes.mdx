@@ -1,0 +1,52 @@
+---
+title: Masquer les routes d'origine
+description: Ne servez que les routes localisées avec removeOriginalPageRoutes.
+---
+
+## Pourquoi les masquer
+
+Par défaut, les routes qu'Astro crée à partir de `src/pages` sont conservées. Sur un site en français où `about.astro` est servi à `/a-propos`, la route d'origine `/about` sert toujours la même page, et apparaît dans votre sitemap.
+
+C'est utile quand les noms de fichiers de vos pages sont dans une autre langue que votre langue par défaut : vous nommez la page `about.astro`, et vous voulez que seuls `/a-propos` et `/en/about` existent.
+
+## Supprimer les routes d'origine
+
+Activez [`removeOriginalPageRoutes`](/fr/reference/configuration/#removeoriginalpageroutes) :
+
+```js title="astro.config.mjs" ins={8}
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+    "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  },
+  removeOriginalPageRoutes: true,
+});
+```
+
+## Ce qui arrive aux routes d'origine
+
+- Elles renvoient une 404. Dans un build statique, leurs fichiers sont supprimés de la sortie.
+- Les autres intégrations, comme `@astrojs/sitemap`, ne reçoivent que les routes localisées. Voir [Sitemap et autres intégrations](/fr/guides/other-integrations/).
+- Une route qu'une langue utilise encore est conservée. Ici, `/` reste car c'est aussi la page d'accueil en français.
+- Les pages d'erreur à la racine, `/404` et `/500`, sont toujours conservées, car Astro en a besoin.
+
+## Rediriger le chemin racine
+
+Quand [`prefixDefaultLocale`](/fr/reference/configuration/#prefixdefaultlocale) et `removeOriginalPageRoutes` sont tous deux activés, rien n'est servi à `/`. Redirigez ce chemin dans votre propre middleware, qui s'exécute avant celui de l'intégration :
+
+```ts title="src/middleware.ts"
+import { defineMiddleware } from "astro:middleware";
+
+export const onRequest = defineMiddleware((context, next) => {
+  if (context.url.pathname === "/") return context.redirect("/fr/");
+  return next();
+});
+```
+
+Cela fonctionne en développement et pour les pages rendues à la demande.
+
+## Hébergeurs statiques
+
+Un site statique n'a pas de middleware une fois déployé. Les fichiers des routes d'origine sont supprimés du build, donc votre hébergeur renvoie sa page 404 pour ces routes. Pour rediriger `/` vers une langue, configurez la redirection chez votre hébergeur ou sur votre CDN.

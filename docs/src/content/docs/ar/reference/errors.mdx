@@ -1,0 +1,72 @@
+---
+title: رسائل الخطأ
+description: معنى كل خطأ يرميه astro-localized-routes، وكيفية إصلاحه.
+---
+
+يفحص التكامل إعداداتك عند بدء تشغيل Astro، ويتوقف مع أحد هذه الأخطاء عند وجود مشكلة.
+
+## Missing route for pattern
+
+```
+Missing route for pattern: /about, locale: en
+```
+
+لا يوجد لصفحة مسار في إحدى اللغات ضمن [`routes`](/ar/reference/configuration/#routes). أضف المسار المفقود:
+
+```js
+routes: {
+  "/about": { fr: "/a-propos", en: "/about" },
+},
+```
+
+أو اختر قيمة أخرى للخيار [`missingRouteBehavior`](/ar/guides/missing-translations/). مع القيمة `"warn"`، تُسجَّل الرسالة نفسها كتحذير بدلًا من ذلك.
+
+## Invalid missingRouteBehavior
+
+```
+Invalid missingRouteBehavior: skip
+```
+
+أرجعت الدالة الممرَّرة إلى [`missingRouteBehavior`](/ar/reference/configuration/#missingroutebehavior) قيمةً ليست `"error"` ولا `"warn"` ولا `"ignore"` ولا `"use_default"`.
+
+## Localized pattern conflict
+
+```
+Localized pattern conflict: pattern "/blog" for file "about.astro" and locale "fr" conflicts with existing pattern "/blog" for file "blog.astro"
+```
+
+مسار مترجم مستخدم بالفعل من قِبل صفحة أخرى، أو من قِبل لغة أخرى. تُقارن المسارات حسب بنيتها، لذا يتعارض `/journal/[slug]` و`/journal/[id]` أيضًا. امنح أحدهما مسارًا آخر.
+
+يحدث هذا أيضًا عندما يحتوي مشروعك على صفحة في مسار صفحة خطأ مترجمة، مثل `src/pages/en/404.astro`. اضبط [`errorPages: []`](/ar/guides/error-pages/) لاستخدام صفحاتك الخاصة.
+
+## Localized patterns are not allowed to use error page paths
+
+```
+Localized patterns are not allowed to use error page paths: pattern "/404" for file "missing.astro" and locale "fr"
+```
+
+رُبطت صفحة بالمسار `/404` أو `/500`، وهما محجوزان [لصفحات الخطأ](/ar/guides/error-pages/). استخدم مسارًا آخر.
+
+## Localized patterns must use the same parameters as their page
+
+```
+Localized patterns must use the same parameters as their page: pattern "/journal/[titre]" for file "blog/[slug].astro" and locale "fr" doesn't match "/blog/[slug]"
+```
+
+أحد المسارات يعيد تسمية معامل، أو يضيف معاملًا، أو يحذفه. احتفظ بمعاملات الصفحة، بأي ترتيب: مثل `/journal/[slug]` للمسار `/blog/[slug]`. ويجب أن يبقى معامل rest مثل `[...slug]` معامل rest.
+
+## Duplicate routes for page
+
+```
+Duplicate routes for page "/about": "/about" and "/about/"
+```
+
+الصفحة نفسها مهيّأة مرتين في [`routes`](/ar/reference/configuration/#routes). تُتجاهل الشرطات المائلة في النهاية والمكررة، لذا فإن `/about` و`/about/` هما الصفحة نفسها. أبقِ مُدخلًا واحدًا.
+
+## Missing parameter for the route
+
+```
+Missing parameter "slug" for the route "/journal/[slug]"
+```
+
+ترميه الدالة [`getAlternates`](/ar/reference/runtime-api/#getalternates) عندما يفتقد السياق الذي تتلقاه أحد معاملات المسار. مرّر `Astro`، أو السياق الكامل لنقطة النهاية أو الوسيط، بدلًا من كائن تبنيه بنفسك.

@@ -3,14 +3,84 @@ title: Language switcher and hreflang
 description: Link to the current page in other locales with getAlternates.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
+[`getAlternates`](/reference/runtime-api/#getalternates) returns the path of the current page in every locale it exists in, the current locale included, in the order of your `locales`:
+
+```astro
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+
+// on `/a-propos`: [{ locale: "fr", path: "/a-propos/" }, { locale: "en", path: "/en/about/" }]
+const alternates = getAlternates(Astro);
+---
+```
 
 ## Building a language switcher
 
+```astro title="src/components/LanguageSwitcher.astro"
+---
+import { getAlternates, getLocale } from "virtual:astro-localized-routes";
+
+const labels = { fr: "Français", en: "English" };
+const current = getLocale(Astro);
+---
+
+<nav aria-label="Language">
+  <ul>
+    {
+      getAlternates(Astro).map(({ locale, path }) => (
+        <li>
+          <a
+            href={path}
+            hreflang={locale}
+            lang={locale}
+            aria-current={locale === current ? "page" : undefined}
+          >
+            {labels[locale]}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+```
+
+A locale where the page doesn't exist, for example because of [`missingRouteBehavior: "ignore"`](/guides/missing-translations/), isn't in the list.
+
 ## Adding hreflang links
+
+`hreflang` links need absolute URLs, so set [`site`](https://docs.astro.build/en/reference/configuration-reference/#site) in your Astro config. `new URL` throws without it:
+
+```astro title="src/layouts/Layout.astro"
+---
+import { getAlternates } from "virtual:astro-localized-routes";
+
+const alternates = getAlternates(Astro);
+---
+
+<head>
+  {
+    alternates.map(({ locale, path }) => (
+      <link rel="alternate" hreflang={locale} href={new URL(path, Astro.site)} />
+    ))
+  }
+</head>
+```
 
 ## Base path and trailing slashes
 
+The paths are ready to use in links:
+
+- They include your [`base`](https://docs.astro.build/en/reference/configuration-reference/#base), for example `/docs/en/about/`.
+- They end with a slash when Astro adds one to its own links: with `trailingSlash: "always"`, or with `"ignore"` and `build.format: "directory"`, which are Astro's defaults.
+
 ## Dynamic routes and translated slugs
+
+Dynamic routes use the current parameters for every locale, so `/journal/mon-article` gets `/en/blog/mon-article/`.
+
+If your slugs are translated, or an entry doesn't exist in every locale (for example, a post that is only in French), build those links yourself for now. Otherwise they lead to pages that weren't built.
+
+## When the list is empty
+
+Error pages, server islands, actions and the routes of pages that aren't localized return an empty list.
+
+With [`removeOriginalPageRoutes`](/reference/configuration/#removeoriginalpageroutes) disabled, an original route that no locale uses, for example `/about` next to `/a-propos`, returns the alternates of its page, which don't include its own path.

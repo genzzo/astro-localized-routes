@@ -3,12 +3,56 @@ title: Sitemap and other integrations
 description: Control which routes other integrations such as @astrojs/sitemap receive.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
-
 ## What other integrations see
+
+Astro gives every integration its own list of routes and built pages. Without any change, they would see the routes that [`removeOriginalPageRoutes`](/guides/hiding-original-routes/) hides, and the [localized error pages](/guides/error-pages/).
+
+To prevent this, the integration wraps the `astro:routes:resolved` and `astro:build:done` hooks of the other integrations, and removes those routes before passing them on. Your localized routes are passed on as usual.
 
 ## Using @astrojs/sitemap
 
+With `removeOriginalPageRoutes` enabled, `@astrojs/sitemap` lists only the localized pages. Nothing else needs to be configured:
+
+```js title="astro.config.mjs"
+import { defineConfig } from "astro/config";
+import sitemap from "@astrojs/sitemap";
+import localizedRoutes from "astro-localized-routes";
+
+export default defineConfig({
+  site: "https://example.com",
+  integrations: [
+    localizedRoutes({
+      locales: ["fr", "en"],
+      defaultLocale: "fr",
+      routes: {
+        "/about": { fr: "/a-propos", en: "/about" },
+      },
+      removeOriginalPageRoutes: true,
+    }),
+    sitemap(),
+  ],
+});
+```
+
+The sitemap includes `/a-propos/` and `/en/about/`, but not `/about/` or `/en/404/`.
+
 ## Opting an integration out
+
+Some integrations need Astro's original routes and pages. List them by name in [`crossIntegrationBehavior.excludedIntegrations`](/reference/configuration/#crossintegrationbehavior) to give them everything, without filtering:
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  // ...
+  crossIntegrationBehavior: {
+    excludedIntegrations: ["my-integration"],
+  },
+});
+```
+
+:::caution
+The files of the removed routes are deleted from the build regardless. If an excluded integration needs those files, place it before `localizedRoutes` in your `integrations`, so that it runs first.
+:::
+
+## Your own middleware
+
+The integration's middleware runs after yours, so your middleware can handle things like authentication or redirects before it.

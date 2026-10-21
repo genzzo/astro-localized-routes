@@ -1,0 +1,54 @@
+---
+title: الترجمات المفقودة
+description: حدّد ما يحدث عندما لا يكون لصفحة مسار في إحدى اللغات باستخدام missingRouteBehavior.
+---
+
+تحتاج كل صفحة في `src/pages` إلى مسار لكل لغة في [`routes`](/ar/reference/configuration/#routes)، باستثناء `/`. ويحدد الخيار [`missingRouteBehavior`](/ar/reference/configuration/#missingroutebehavior) ما يحدث عند غياب أحدها.
+
+## السلوكيات الأربعة
+
+| القيمة          | ما يحدث                                                                                   |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| `"error"`       | القيمة الافتراضية. يتوقف Astro مع [خطأ](/ar/reference/errors/#missing-route-for-pattern). |
+| `"warn"`        | يُسجَّل تحذير، ولا تكون الصفحة متاحة بتلك اللغة.                                          |
+| `"ignore"`      | لا تكون الصفحة متاحة بتلك اللغة، دون تحذير.                                               |
+| `"use_default"` | تستخدم الصفحة مسارها الأصلي تحت بادئة اللغة، مثل `/en/about` للمسار `/about`.             |
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+  },
+  // `/contact` has no entry, so it's served at `/contact` and `/en/contact`
+  missingRouteBehavior: "use_default",
+});
+```
+
+## القرار لكل صفحة على حدة
+
+مرّر دالة لاختيار سلوك لكل صفحة ولغة. تتلقى هذه الدالة مسار الصفحة واللغة:
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["en", "fr", "de"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { en: "/about", fr: "/a-propos", de: "/ueber-uns" },
+  },
+  missingRouteBehavior: (route, locale) => {
+    // the blog keeps its paths in every locale
+    if (route === "/blog") return "use_default";
+    // posts are only written in French
+    if (route === "/blog/[...slug]") return locale === "fr" ? "use_default" : "ignore";
+    return "error";
+  },
+});
+```
+
+يجب أن تُرجع الدالة إحدى القيم الأربع، وأي قيمة أخرى تُعدّ [خطأً](/ar/reference/errors/#invalid-missingroutebehavior).
+
+## الروابط إلى اللغات المفقودة
+
+تستبعد الدالة [`getAlternates`](/ar/guides/language-switcher/) اللغات التي لا توجد فيها الصفحة، فلا يربط مبدّل اللغة بها.

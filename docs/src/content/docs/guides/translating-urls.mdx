@@ -3,14 +3,91 @@ title: Translating page URLs
 description: Map each page to a path for every locale with the routes option.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
-
 ## The routes map
+
+The [`routes`](/reference/configuration/#routes) option maps each page to its path in every locale. The keys are the routes of your pages, as Astro builds them from `src/pages`:
+
+| File                          | Route          |
+| ----------------------------- | -------------- |
+| `src/pages/about.astro`       | `/about`       |
+| `src/pages/blog/index.astro`  | `/blog`        |
+| `src/pages/blog/[slug].astro` | `/blog/[slug]` |
+
+The values are the paths for each locale, without the locale prefix:
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en", "de"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about", de: "/ueber-uns" },
+    "/blog": { fr: "/journal", en: "/blog", de: "/blog" },
+  },
+});
+```
+
+The default locale is served at its path as is, and every other locale under its prefix:
+
+| Page               | `fr` (default) | `en`        | `de`            |
+| ------------------ | -------------- | ----------- | --------------- |
+| `about.astro`      | `/a-propos`    | `/en/about` | `/de/ueber-uns` |
+| `blog/index.astro` | `/journal`     | `/en/blog`  | `/de/blog`      |
+
+Each page needs a path for every locale. When one is missing, the build fails by default, see [missing translations](/guides/missing-translations/) to change that.
+
+Trailing and doubled slashes are ignored, so `/about/` is the same as `/about`. Configuring the same page twice, for example as `/about` and `/about/`, is an error.
 
 ## Dynamic routes and parameters
 
+Dynamic routes are translated the same way. A path must use the same parameters as its page:
+
+```js title="astro.config.mjs"
+routes: {
+  "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  "/docs/[...path]": { fr: "/documentation/[...path]", en: "/docs/[...path]" },
+},
+```
+
+Parameters keep their names, because your page reads them by name, and a rest parameter such as `[...path]` must stay a rest parameter. `/journal/[titre]` for `/blog/[slug]` is an [error](/reference/errors/#localized-patterns-must-use-the-same-parameters-as-their-page).
+
+The values of the parameters are the same in every locale: `/journal/mon-article` and `/en/blog/mon-article` render the same page with `slug` set to `mon-article`. In a static build, `getStaticPaths` runs for each localized route and returns the same paths for all of them.
+
+:::note
+Translated values for a parameter, such as `/journal/mon-article` and `/en/blog/my-article`, aren't supported yet.
+:::
+
 ## The home page
 
+`/` is served at `/` for every locale, so you don't need to configure it: the home page is at `/` in the default locale and at `/en` in English. You can still give it another path:
+
+```js title="astro.config.mjs"
+routes: {
+  "/": { fr: "/", en: "/home" },
+},
+```
+
 ## Prefixing the default locale
+
+The default locale is served without a prefix. With [`prefixDefaultLocale`](/reference/configuration/#prefixdefaultlocale), it gets one too:
+
+```js title="astro.config.mjs" ins={4}
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  prefixDefaultLocale: true,
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+  },
+});
+```
+
+| Page          | `fr` (default) | `en`        |
+| ------------- | -------------- | ----------- |
+| `index.astro` | `/fr`          | `/en`       |
+| `about.astro` | `/fr/a-propos` | `/en/about` |
+
+The original routes, `/` and `/about`, are still served. To remove them, and redirect `/` to a locale, see [hiding the original routes](/guides/hiding-original-routes/).
+
+## Conflicts
+
+A localized path can't be one that another page or another locale already uses. For example, mapping `/about` to `/blog` in French fails if `src/pages/blog.astro` exists. Error pages also keep their own paths: no page can be mapped to `/404` or `/500`. See the [error messages](/reference/errors/) for each case.

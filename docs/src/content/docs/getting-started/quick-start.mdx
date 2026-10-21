@@ -3,22 +3,84 @@ title: Quick start
 description: Build a French and English site with translated URLs in five minutes.
 ---
 
-:::note[Draft]
-This page is an outline. Its content is coming soon.
-:::
+import { Steps } from "@astrojs/starlight/components";
 
-## Add the integration
+This guide builds a small site in French and English, with French as the default locale.
 
-Configure `locales`, `defaultLocale` and `routes` in `astro.config.mjs`.
+<Steps>
 
-## Create your pages
+1. [Install the integration](/getting-started/installation/), then configure your locales and the path of each page:
 
-Write pages in `src/pages` as usual, with language-neutral file names.
+   ```js title="astro.config.mjs"
+   import { defineConfig } from "astro/config";
+   import localizedRoutes from "astro-localized-routes";
 
-## Check the routes
+   export default defineConfig({
+     integrations: [
+       localizedRoutes({
+         locales: ["fr", "en"],
+         defaultLocale: "fr",
+         routes: {
+           "/about": { fr: "/a-propos", en: "/about" },
+         },
+       }),
+     ],
+   });
+   ```
 
-Run `astro dev` and visit each localized path.
+   The home page doesn't need an entry: `/` is served at `/` for every locale, so `/` in French and `/en` in English.
 
-## Use the locale in a page
+2. Create your pages in `src/pages` as usual: `index.astro` and `about.astro`, with a layout in `src/layouts/Layout.astro`. Name them however you like, the URLs come from your config.
 
-Read the current locale with `getLocale` and set `<html lang>`.
+3. Read the current locale in your layout to set the language of the page:
+
+   ```astro title="src/layouts/Layout.astro"
+   ---
+   import { getLocale } from "virtual:astro-localized-routes";
+
+   const locale = getLocale(Astro);
+   ---
+
+   <html lang={locale}>
+     <body>
+       <slot />
+     </body>
+   </html>
+   ```
+
+4. Render the content of each page in the current locale. A small dictionary is enough to start:
+
+   ```astro title="src/pages/about.astro"
+   ---
+   import { getLocale } from "virtual:astro-localized-routes";
+   import Layout from "../layouts/Layout.astro";
+
+   const content = {
+     fr: { title: "À propos", text: "Bonjour !" },
+     en: { title: "About", text: "Hello!" },
+   };
+   const { title, text } = content[getLocale(Astro)];
+   ---
+
+   <Layout>
+     <h1>{title}</h1>
+     <p>{text}</p>
+   </Layout>
+   ```
+
+5. Start the dev server with `astro dev` and visit your pages:
+
+   | Page          | `fr`        | `en`        |
+   | ------------- | ----------- | ----------- |
+   | `index.astro` | `/`         | `/en`       |
+   | `about.astro` | `/a-propos` | `/en/about` |
+
+   The original `/about` route still works too. To serve only the localized routes, see [hiding the original routes](/guides/hiding-original-routes/).
+
+</Steps>
+
+## Next steps
+
+- [Translate the URLs](/guides/translating-urls/) of dynamic routes such as `/blog/[slug]`.
+- Add a [language switcher](/guides/language-switcher/) and `hreflang` links.
+- Give each locale its own [error pages](/guides/error-pages/).

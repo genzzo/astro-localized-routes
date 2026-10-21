@@ -1,0 +1,93 @@
+---
+title: Traduire les URL des pages
+description: Associez chaque page à un chemin pour chaque langue avec l'option routes.
+---
+
+## La table des routes
+
+L'option [`routes`](/fr/reference/configuration/#routes) associe chaque page à son chemin dans chaque langue. Les clés sont les routes de vos pages, telles qu'Astro les construit à partir de `src/pages` :
+
+| Fichier                       | Route          |
+| ----------------------------- | -------------- |
+| `src/pages/about.astro`       | `/about`       |
+| `src/pages/blog/index.astro`  | `/blog`        |
+| `src/pages/blog/[slug].astro` | `/blog/[slug]` |
+
+Les valeurs sont les chemins pour chaque langue, sans le préfixe de langue :
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en", "de"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about", de: "/ueber-uns" },
+    "/blog": { fr: "/journal", en: "/blog", de: "/blog" },
+  },
+});
+```
+
+La langue par défaut est servie à son chemin tel quel, et chaque autre langue sous son préfixe :
+
+| Page               | `fr` (par défaut) | `en`        | `de`            |
+| ------------------ | ----------------- | ----------- | --------------- |
+| `about.astro`      | `/a-propos`       | `/en/about` | `/de/ueber-uns` |
+| `blog/index.astro` | `/journal`        | `/en/blog`  | `/de/blog`      |
+
+Chaque page a besoin d'un chemin pour chaque langue. Quand il en manque un, le build échoue par défaut, consultez [Traductions manquantes](/fr/guides/missing-translations/) pour changer cela.
+
+Les barres obliques finales et doublées sont ignorées, donc `/about/` équivaut à `/about`. Configurer la même page deux fois, par exemple sous `/about` et `/about/`, est une erreur.
+
+## Routes dynamiques et paramètres
+
+Les routes dynamiques se traduisent de la même façon. Un chemin doit utiliser les mêmes paramètres que sa page :
+
+```js title="astro.config.mjs"
+routes: {
+  "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  "/docs/[...path]": { fr: "/documentation/[...path]", en: "/docs/[...path]" },
+},
+```
+
+Les paramètres gardent leur nom, car votre page les lit par leur nom, et un paramètre rest comme `[...path]` doit rester un paramètre rest. `/journal/[titre]` pour `/blog/[slug]` est une [erreur](/fr/reference/errors/#localized-patterns-must-use-the-same-parameters-as-their-page).
+
+Les valeurs des paramètres sont les mêmes dans chaque langue : `/journal/mon-article` et `/en/blog/mon-article` affichent la même page avec `slug` défini sur `mon-article`. Dans un build statique, `getStaticPaths` s'exécute pour chaque route localisée et renvoie les mêmes chemins pour toutes.
+
+:::note
+Les valeurs traduites pour un paramètre, comme `/journal/mon-article` et `/en/blog/my-article`, ne sont pas encore prises en charge.
+:::
+
+## La page d'accueil
+
+`/` est servi à `/` pour chaque langue, vous n'avez donc pas besoin de le configurer : la page d'accueil se trouve à `/` dans la langue par défaut et à `/en` en anglais. Vous pouvez tout de même lui donner un autre chemin :
+
+```js title="astro.config.mjs"
+routes: {
+  "/": { fr: "/", en: "/home" },
+},
+```
+
+## Préfixer la langue par défaut
+
+La langue par défaut est servie sans préfixe. Avec [`prefixDefaultLocale`](/fr/reference/configuration/#prefixdefaultlocale), elle en reçoit un aussi :
+
+```js title="astro.config.mjs" ins={4}
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  prefixDefaultLocale: true,
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+  },
+});
+```
+
+| Page          | `fr` (par défaut) | `en`        |
+| ------------- | ----------------- | ----------- |
+| `index.astro` | `/fr`             | `/en`       |
+| `about.astro` | `/fr/a-propos`    | `/en/about` |
+
+Les routes d'origine, `/` et `/about`, sont toujours servies. Pour les supprimer et rediriger `/` vers une langue, consultez [Masquer les routes d'origine](/fr/guides/hiding-original-routes/).
+
+## Conflits
+
+Un chemin localisé ne peut pas être un chemin déjà utilisé par une autre page ou une autre langue. Par exemple, associer `/about` à `/blog` en français échoue si `src/pages/blog.astro` existe. Les pages d'erreur gardent aussi leurs propres chemins : aucune page ne peut être associée à `/404` ou `/500`. Consultez les [messages d'erreur](/fr/reference/errors/) pour chaque cas.
