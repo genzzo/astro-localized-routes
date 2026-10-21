@@ -1,0 +1,20 @@
+---
+title: Why astro-localized-routes
+description: The problem with translated URLs in Astro, and how this integration solves it.
+---
+
+:::note[Draft]
+This page is an outline. Its content is coming soon.
+:::
+
+## The problem
+
+Astro's built-in i18n gives every page the same path in every locale. Translating the path itself (`/a-propos` in French, `/en/about` in English) means duplicating the page file for each locale.
+
+## The idea
+
+Write each page once in `src/pages`, then map it to a path for each locale in your Astro config.
+
+## Is it for you?
+
+When to use it, and when Astro's built-in i18n is enough.

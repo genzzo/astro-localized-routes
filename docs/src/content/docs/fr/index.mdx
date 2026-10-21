@@ -1,0 +1,84 @@
+---
+title: astro-localized-routes
+description: Des URL traduites pour chaque page de votre site Astro, à partir d'un seul fichier de page.
+template: splash
+hero:
+  tagline: La façon dont Astro aurait dû gérer l'i18n dès le départ. Écrivez chaque page une seule fois, et donnez-lui une URL dans chaque langue.
+  actions:
+    - text: Commencer
+      link: /fr/getting-started/quick-start/
+      icon: right-arrow
+    - text: Voir sur GitHub
+      link: https://github.com/genzzo/astro-localized-routes
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, FileTree } from "@astrojs/starlight/components";
+
+:::caution[Travail en cours]
+astro-localized-routes peut encore introduire des changements incompatibles d'une version à l'autre. Vos retours et vos tickets sont les bienvenus sur GitHub.
+:::
+
+## Un fichier par page, une URL dans chaque langue
+
+<CardGrid>
+<Card title="Avec l'i18n intégrée d'Astro" icon="document">
+Une URL traduite nécessite sa propre copie de la page.
+
+<FileTree>
+
+- src/pages/
+  - a-propos.astro
+  - en/
+    - about.astro
+
+</FileTree>
+
+</Card>
+<Card title="Avec astro-localized-routes" icon="approve-check">
+Une seule page, et un chemin par langue dans votre configuration.
+
+<FileTree>
+
+- src/pages/
+  - about.astro
+
+</FileTree>
+
+</Card>
+</CardGrid>
+
+```js title="astro.config.mjs"
+localizedRoutes({
+  locales: ["fr", "en"],
+  defaultLocale: "fr",
+  routes: {
+    "/about": { fr: "/a-propos", en: "/about" },
+    "/blog/[slug]": { fr: "/journal/[slug]", en: "/blog/[slug]" },
+  },
+});
+```
+
+| Page                | `fr` (par défaut) | `en`              |
+| ------------------- | ----------------- | ----------------- |
+| `index.astro`       | `/`               | `/en`             |
+| `about.astro`       | `/a-propos`       | `/en/about`       |
+| `blog/[slug].astro` | `/journal/[slug]` | `/en/blog/[slug]` |
+
+## Fonctionnalités
+
+<CardGrid stagger>
+  <Card title="URL traduites" icon="translate">
+    Donnez à chaque page, routes dynamiques comprises, son propre chemin dans chaque langue.
+  </Card>
+  <Card title="Fonctions typées" icon="seti:typescript">
+    `getLocale` et `getAlternates` sont typées à partir de votre configuration.
+  </Card>
+  <Card title="Pages d'erreur localisées" icon="warning">
+    Chaque langue a ses propres pages 404 et 500.
+  </Card>
+  <Card title="Compatible avec les autres intégrations" icon="puzzle">
+    Les sitemaps et les autres intégrations ne voient que les routes localisées.
+  </Card>
+</CardGrid>
