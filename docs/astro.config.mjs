@@ -5,6 +5,9 @@ import starlightLinksValidator from "starlight-links-validator";
 import starlightThemeRapide from "starlight-theme-rapide";
 
 export default defineConfig({
+  // the address of the docs, used for the sitemap and the canonical and hreflang tags
+  // TODO: replace with the real address once the hosting is decided
+  site: "https://astro-localized-routes.example",
   integrations: [
     starlight({
       title: "astro-localized-routes",
