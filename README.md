@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="astro-localized-routes logo" width="128" height="128">
+</p>
+
 # astro-localized-routes
 
 The way Astro should be handling i18n in the first place.
