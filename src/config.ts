@@ -22,7 +22,7 @@ export interface AstroLocalizedRoutesOptions<Locales extends string = string> {
   locales: readonly [Locales, ...Locales[]];
   /**
    * The default locale for the site. Used in conjunction with `prefixDefaultLocale`
-   * to determine how the default locale is served.
+   * to determine how the default locale is served. Must be one of the `locales`.
    */
   defaultLocale: NoInfer<Locales>;
   /**
@@ -133,6 +133,12 @@ interface AstroLocalizedRoutesResolvedOptions<Locales extends string = string> e
 export function resolveOptions<Locales extends string = string>(
   options: AstroLocalizedRoutesOptions<Locales>,
 ): AstroLocalizedRoutesResolvedOptions<Locales> {
+  if (!options.locales.includes(options.defaultLocale)) {
+    throw new Error(
+      `Default locale "${options.defaultLocale}" must be one of the locales: ${JSON.stringify(options.locales)}`,
+    );
+  }
+
   return {
     ...options,
     routes: {
