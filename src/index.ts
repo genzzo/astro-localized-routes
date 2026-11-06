@@ -104,6 +104,8 @@ export default function localizedRoutes<Locales extends string>(
           // root error pages should always be kept as Astro needs them as fallback routes
           let keepOriginal = isErrorPage || !resolvedOptions.removeOriginalPageRoutes;
           const localizedPatterns: Partial<Record<Locales, string>> = {};
+          // the locale served by the page's own route, which isn't claimed like the injected ones
+          let originalRouteLocale: Locales | undefined;
 
           for (const locale of resolvedOptions.locales) {
             let localizedPattern: string | undefined =
@@ -167,6 +169,14 @@ export default function localizedRoutes<Locales extends string>(
             }
 
             if (localizedPattern === basePattern) {
+              // only one locale can be served by the page's own route (e.g. not both `en: "/fr/x"`
+              // and `fr: "/x"` for `fr/x.astro`)
+              if (originalRouteLocale !== undefined) {
+                throw new Error(
+                  `Localized pattern conflict: pattern "${localizedPattern}" for file "${file}" is used by both locales "${originalRouteLocale}" and "${locale}"`,
+                );
+              }
+              originalRouteLocale = locale;
               keepOriginal = true; // served by the page's own route
               continue;
             }
