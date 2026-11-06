@@ -131,7 +131,26 @@ const alternates = getAlternates(Astro);
 
 `getAlternates` returns the path of the current page in every locale it exists in, the current locale included. Use it for a language switcher, or for `hreflang` links, which need `site` in your config, because `new URL` throws without it. Paths include `base` and end with a slash when Astro adds one to its own links (with `trailingSlash: "always"`, or `"ignore"` with `build.format: "directory"`).
 
-Dynamic routes use the current params for every locale, so `/journal/mon-article` gets `/en/blog/mon-article/`. If your slugs are translated, or an entry doesn't exist in every locale (for example, a post that is only in French), build those links yourself for now, otherwise they lead to pages that weren't built. Error pages, server islands, actions and routes of pages that aren't localized return an empty list. With `removeOriginalPageRoutes` disabled, an original route that no locale uses (for example, `/about` next to `/a-propos`) returns the alternates of its page, which don't include its own path.
+Dynamic routes use the current params for every locale, so `/journal/mon-article` gets `/en/blog/mon-article/`. If your slugs are translated, or an entry doesn't exist in every locale (for example, a post that is only in French), build those links with [`getLocalizedPath`](#linking-to-other-pages) instead, otherwise they lead to pages that weren't built. Error pages, server islands, actions and routes of pages that aren't localized return an empty list. With `removeOriginalPageRoutes` disabled, an original route that no locale uses (for example, `/about` next to `/a-propos`) returns the alternates of its page, which don't include its own path.
+
+### Linking to other pages
+
+```astro
+---
+import { getLocale, getLocalizedPath } from "virtual:astro-localized-routes";
+
+const locale = getLocale(Astro);
+---
+
+<a href={getLocalizedPath("/about", locale)}>About</a>
+<a href={getLocalizedPath("/blog/[slug]", locale, { slug: "mon-article" })}>Mon article</a>
+```
+
+`getLocalizedPath` returns the path of a page in a locale. Pass the page's route, as in `routes` (for example, `/blog/[slug]`), one of its localized routes (`/journal/[slug]`), or any path on your site (`/journal/mon-article` or `/en/about#team`). Routes and paths are written without `base`, like the paths in `routes`. For a URL that includes `base`, such as `Astro.url`, pass the `URL` object itself.
+
+The params fill the parameters of a route. A path has its own, and the ones you pass replace them, for example for a translated slug: `getLocalizedPath("/journal/mon-article", "en", { slug: "my-article" })` returns `/en/blog/my-article/`. The query and hash of a path are kept, and the result includes `base` and a trailing slash like the paths of `getAlternates`.
+
+It returns `undefined` when the path isn't served by a localized page (for example, an endpoint, an error page or a typo), or when the page has no path in that locale (with `missingRouteBehavior: "ignore"`).
 
 ## Options
 

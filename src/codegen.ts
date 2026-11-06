@@ -68,6 +68,34 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
     routePattern: string;
     params: Record<string, string | undefined>;
   }): { locale: Locale; path: string }[];
+  /**
+   * Returns the path of a page in a locale, to link to it. Pass the page's route (e.g.
+   * \`/blog/[slug]\`, as in \`routes\`), one of its localized routes (e.g. \`/journal/[slug]\`), any
+   * path on the site (e.g. \`/journal/mon-article\`), or a URL (e.g. \`Astro.url\`). Routes and
+   * paths are written without \`base\`, like the paths in \`routes\`, while a URL includes it.
+   *
+   * \`params\` fills the parameters of a route, and overrides the ones read from a path (e.g. for a
+   * translated slug). The query and hash of a path are kept. Paths include \`base\` and end with a
+   * slash when Astro adds one to its own links, like the paths of \`getAlternates\`.
+   *
+   * Returns \`undefined\` when the path isn't served by a localized page (e.g. an endpoint or an
+   * error page), or when the page has no path in that locale.
+   *
+   * @example
+   * \`\`\`astro
+   * ---
+   * import { getLocale, getLocalizedPath } from ${JSON.stringify(VIRTUAL_ID)};
+   *
+   * const locale = getLocale(Astro);
+   * ---
+   * <a href={getLocalizedPath("/blog/[slug]", locale, { slug: "hello" })}>Hello</a>
+   * \`\`\`
+   */
+  export function getLocalizedPath(
+    pathOrRoute: string | URL,
+    locale: Locale,
+    params?: Record<string, string | undefined>,
+  ): string | undefined;
 }
 `;
 }
