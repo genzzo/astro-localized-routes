@@ -16,6 +16,12 @@
   },
   "license": "MIT",
   "author": "genzzo",
+  "contributors": [
+    {
+      "name": "hadihz",
+      "url": "https://github.com/HadiHz88"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/genzzo/astro-localized-routes.git"
@@ -56,5 +62,12 @@
   },
   "peerDependencies": {
     "astro": "^6.0.3 || ^7.0.0"
-  }
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "26"
+    }
+  },
+  "packageManager": "pnpm@12.11.2"
 }
