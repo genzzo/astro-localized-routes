@@ -11,7 +11,6 @@ import {
 } from "astro-localized-routes:internal:virtual";
 import { ACTION_RPC_ROUTE, SERVER_ISLAND_ROUTE } from "./constants";
 import { getPathLocale, getRequestedLocale } from "./runtime";
-import { isRootErrorPage } from "./utils";
 
 export { defaultLocale, locales };
 
@@ -34,8 +33,7 @@ export function getLocale({
     return getPageLocale(new URL(referer).pathname);
   }
 
-  // the root error pages are rendered for any path, so they don't have a locale of their own
-  const locale = isRootErrorPage(routePattern) ? undefined : localeByRoutePattern.get(routePattern);
+  const locale = localeByRoutePattern.get(routePattern);
   if (locale !== undefined) return locale;
 
   return getRequestedLocale(url, originPathname) ?? defaultLocale;

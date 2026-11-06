@@ -159,6 +159,10 @@ export default function localizedRoutes<Locales extends string>(
               );
             }
 
+            // the root error page is rendered for any missing path, so it doesn't have a locale of
+            // its own (e.g. `/404` for the default locale without a prefix)
+            if (isErrorPage && localizedPattern === basePattern) continue;
+
             localeByRoutePattern.set(localizedPattern, locale);
 
             // error pages don't have alternates, because they're rendered for any missing path
