@@ -5,7 +5,7 @@ import {
   routePatternsToHide,
   trailingSlash,
 } from "astro-localized-routes:internal:virtual";
-import { getPathLocale } from "./runtime";
+import { getRequestedLocale } from "./runtime";
 
 // status and localized copies of each error page (e.g. `/404` -> 404 with `en` -> `/en/404`)
 const errorPagesMap = new Map(
@@ -36,9 +36,7 @@ export const onRequest: MiddlewareHandler = async (ctx, next) => {
   // requested locale when there is one
   const errorPage = errorPagesMap.get(ctx.routePattern);
   if (errorPage !== undefined) {
-    // the path that was requested, which stays the same after a rewrite (e.g. `/en/blog/missing`
-    // rewritten to `/404`) and doesn't include `base`
-    const locale = getPathLocale(ctx.originPathname);
+    const locale = getRequestedLocale(ctx.url, ctx.originPathname);
     const copy = locale === undefined ? undefined : errorPage.copies.get(locale);
     if (copy === undefined) return next();
     // a trailing slash is required with `trailingSlash: "always"`, otherwise the copy doesn't

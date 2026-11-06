@@ -97,7 +97,7 @@ const locale = getLocale(Astro); // "fr" | "en"
 </html>
 ```
 
-Each localized route returns its own locale, including the localized error pages. The root error pages and any other route return the locale the requested path starts with, or the default locale (for example, `en` for `/en/missing`, even after a rewrite to `/404`, or for `/en/rss.xml` served by `[lang]/rss.xml.ts`). Server islands and actions return the locale of the page that called them, based on the page's URL in the browser. When your middleware rewrites a request to another locale (for example, `/` to `/fr` based on `Accept-Language`), the browser's URL doesn't match the page, so pass the locale yourself, as a prop of the island or in the action's input:
+Each localized route returns its own locale, including the localized error pages. The root error pages and any other route return the locale the requested path starts with, or the default locale (for example, `en` for `/en/rss.xml` served by `[lang]/rss.xml.ts`). After a rewrite, the path the request was rewritten to comes first, unless it doesn't start with a locale: `/missing` rewritten to `/fr/missing` by your middleware gets `fr`, and `/en/missing` rewritten to `/404` keeps `en`. Server islands and actions return the locale of the page that called them, based on the page's URL in the browser. When your middleware rewrites a request to another locale (for example, `/` to `/fr` based on `Accept-Language`), the browser's URL doesn't match the page, so pass the locale yourself, as a prop of the island or in the action's input:
 
 ```astro
 <Island server:defer locale={getLocale(Astro)} />

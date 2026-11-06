@@ -10,17 +10,19 @@ import {
   trailingSlash,
 } from "astro-localized-routes:internal:virtual";
 import { ACTION_RPC_ROUTE, SERVER_ISLAND_ROUTE } from "./constants";
-import { getPathLocale } from "./runtime";
+import { getPathLocale, getRequestedLocale } from "./runtime";
 import { isRootErrorPage } from "./utils";
 
 export { defaultLocale, locales };
 
 export function getLocale({
   routePattern,
+  url,
   originPathname,
   request,
 }: {
   routePattern: string;
+  url: URL;
   originPathname: string;
   request: Request;
 }): string {
@@ -36,9 +38,7 @@ export function getLocale({
   const locale = isRootErrorPage(routePattern) ? undefined : localeByRoutePattern.get(routePattern);
   if (locale !== undefined) return locale;
 
-  // the path that was requested, which stays the same after a rewrite (e.g. `/en/blog/missing`
-  // rewritten to `/404`) and doesn't include `base`
-  return getPathLocale(originPathname) ?? defaultLocale;
+  return getRequestedLocale(url, originPathname) ?? defaultLocale;
 }
 
 export function getAlternates({

@@ -20,8 +20,9 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
    *
    * Routes created by the integration return their own locale. Error pages and any other route
    * return the locale the requested path starts with (e.g. \`en\` for \`/en/missing\` or
-   * \`/en/feed.xml\`), or the default locale. Server islands and actions return the locale of the
-   * page that called them.
+   * \`/en/feed.xml\`), or the default locale. After a rewrite, the path it was rewritten to comes
+   * first (e.g. \`fr\` for \`/missing\` rewritten to \`/fr/missing\`). Server islands and actions
+   * return the locale of the page that called them.
    *
    * @example
    * \`\`\`astro
@@ -35,6 +36,7 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
    */
   export function getLocale(context: {
     routePattern: string;
+    url: URL;
     originPathname: string;
     request: Request;
   }): Locale;
