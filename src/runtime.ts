@@ -11,12 +11,23 @@ export function getPathLocale(path: string): string | undefined {
 // rewritten to `/fr/xyz` by a middleware), or the path before it when the URL has no locale (e.g.
 // `/en/blog/missing` rewritten to `/404`)
 export function getRequestedLocale(url: URL, originPathname: string): string | undefined {
-  return getPathLocale(removeBase(url.pathname)) ?? getPathLocale(originPathname);
+  return getPathLocale(removeBase(decodePath(url.pathname))) ?? getPathLocale(originPathname);
 }
 
 // a path without `base`, like Astro matches it (e.g. `/docs/en/about` -> `/en/about`, `/docs` ->
-// `/`), which is kept as is outside `base`
+// `/`), which is kept as is outside `base`, and which must be decoded first like `base` in the
+// config (e.g. `/über/en`, not `/%C3%BCber/en`)
 export function removeBase(path: string): string {
   if (path === base) return "/";
   return path.startsWith(`${base}/`) ? path.slice(base.length) : path;
+}
+
+// a path decoded like Astro matches it (e.g. `/de/%C3%BCber-uns` -> `/de/über-uns`)
+export function decodePath(path: string): string {
+  try {
+    return decodeURI(path);
+  } catch {
+    // a malformed path (e.g. `/%E0`) is kept as is
+    return path;
+  }
 }

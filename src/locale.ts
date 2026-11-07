@@ -10,7 +10,7 @@ import {
   trailingSlash,
 } from "astro-localized-routes:internal:virtual";
 import { ACTION_RPC_ROUTE, SERVER_ISLAND_ROUTE } from "./constants";
-import { getPathLocale, getRequestedLocale, removeBase } from "./runtime";
+import { decodePath, getPathLocale, getRequestedLocale, removeBase } from "./runtime";
 
 export { defaultLocale, locales };
 
@@ -74,16 +74,16 @@ export function getLocalizedPath(
     // a path without `base`, like the paths in `routes`, since a path can start with the same
     // segment as `base` (e.g. `/blog/hello` with `base: "/blog"`)
     const end = pathOrRoute.search(/[?#]/);
-    pathname = end === -1 ? pathOrRoute : pathOrRoute.slice(0, end);
+    pathname = decodePath(end === -1 ? pathOrRoute : pathOrRoute.slice(0, end));
     suffix = end === -1 ? "" : pathOrRoute.slice(end);
   } else {
-    // a URL includes `base` (e.g. `Astro.url`)
-    pathname = removeBase(pathOrRoute.pathname);
+    // a URL includes `base` (e.g. `Astro.url`), which is removed once the path is decoded
+    pathname = removeBase(decodePath(pathOrRoute.pathname));
     suffix = pathOrRoute.search + pathOrRoute.hash;
   }
   // the trailing slash is optional, like in the `routes` config (e.g. `/a-propos/`), and so is the
   // extension of the pages built as files (e.g. `/a-propos.html` in `Astro.url`)
-  const path = removeHtmlExtension(decodePath(pathname)).replace(/(.)\/+$/, "$1");
+  const path = removeHtmlExtension(pathname).replace(/(.)\/+$/, "$1");
 
   // a page route (e.g. `/blog/[slug]`) or one of its localized routes (e.g. `/journal/[slug]`)
   let page = getPage(path);
@@ -166,16 +166,6 @@ function getPageLocale(pathname: string): string {
   const pattern = matchRoute(path)?.pattern;
   const locale = pattern === undefined ? undefined : localeByRoutePattern.get(pattern);
   return locale ?? getPathLocale(path) ?? defaultLocale;
-}
-
-// a path decoded like Astro matches it (e.g. `/de/%C3%BCber-uns` -> `/de/über-uns`)
-function decodePath(path: string): string {
-  try {
-    return decodeURI(path);
-  } catch {
-    // a malformed path (e.g. `/%E0`) is kept as is
-    return path;
-  }
 }
 
 // a path without the `.html` extension of the pages built as files, with `build.format: "file"`
