@@ -63,6 +63,10 @@ export function getLocalizedPath(
   locale: string,
   params: Record<string, string | undefined> = {},
 ): string | undefined {
+  // check that the locale is one of the locales, since it can come from the request (e.g. a query
+  // param) and the patterns of a page are an object with inherited properties (e.g. `toString`)
+  if (!locales.includes(locale)) return undefined;
+
   // the query and hash are kept (e.g. `/a-propos#team` -> `/en/about/#team`)
   let pathname: string;
   let suffix: string;
@@ -84,7 +88,7 @@ export function getLocalizedPath(
   // a page route (e.g. `/blog/[slug]`) or one of its localized routes (e.g. `/journal/[slug]`)
   let page = getPage(path);
   let pathParams: Record<string, string | undefined> = {};
-  // check if the route contains brackets but it not an actual route (e.g. a typo in `/journal/[slgu]`)
+  // check if the route contains brackets but is not an actual route (e.g. a typo in `/journal/[slgu]`)
   const isRoute = typeof pathOrRoute === "string" && /\[[^\]]+\]/.test(path);
   if (page === undefined && !isRoute) {
     // any other path is matched against Astro's routes as it's written first, like Astro's router
