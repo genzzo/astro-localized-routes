@@ -84,9 +84,13 @@ export function getLocalizedPath(
   let page = getPage(path);
   let pathParams: Record<string, string | undefined> = {};
   if (page === undefined) {
-    // any other path is matched against Astro's routes, which require a trailing slash with
-    // `trailingSlash: "always"` (e.g. `/journal/mon-article` -> `/journal/[slug]`)
-    const route = matchRoute(trailingSlash === "always" ? `${path}/` : path);
+    // any other path is matched against Astro's routes as it's written first, like Astro's router
+    // does, and then with or without a trailing slash, because pages can require one while
+    // endpoints with a file extension never have one (e.g. `/en/rss.xml` with `trailingSlash:
+    // "always"`, which would otherwise match `/en/[slug]/`)
+    const withSlash = `${path}/`;
+    const [written, other] = pathname.endsWith("/") ? [withSlash, path] : [path, withSlash];
+    const route = matchRoute(written) ?? matchRoute(other);
     page = route === undefined ? undefined : getPage(route.pattern);
     pathParams = route?.params ?? {};
   }
