@@ -88,4 +88,4 @@ jobs:
           path: dist
 
       - name: Publish
-        run: npm publish --ignore-scripts
+        run: npm stage publish --ignore-scripts
