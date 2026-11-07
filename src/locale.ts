@@ -77,8 +77,9 @@ export function getLocalizedPath(
     pathname = removeBase(pathOrRoute.pathname);
     suffix = pathOrRoute.search + pathOrRoute.hash;
   }
-  // the trailing slash is optional, like in the `routes` config (e.g. `/a-propos/`)
-  const path = decodePath(pathname).replace(/(.)\/+$/, "$1");
+  // the trailing slash is optional, like in the `routes` config (e.g. `/a-propos/`), and so is the
+  // extension of the pages built as files (e.g. `/a-propos.html` in `Astro.url`)
+  const path = removeHtmlExtension(decodePath(pathname)).replace(/(.)\/+$/, "$1");
 
   // a page route (e.g. `/blog/[slug]`) or one of its localized routes (e.g. `/journal/[slug]`)
   let page = getPage(path);
@@ -137,9 +138,7 @@ function getPath(pattern: string, params: Record<string, string | undefined>): s
 // since a page's path can start with another locale (e.g. an `en` page at `/fr/course`)
 function getPageLocale(pathname: string): string {
   // the path includes `base` (e.g. `/docs/en/about`)
-  let path = removeBase(decodePath(pathname));
-  // pages are served as `.html` files with `build.format: "file"` (e.g. `/fr.html`)
-  if (buildFormat === "file") path = path.replace(/(\/index)?\.html$/, "") || "/";
+  const path = removeHtmlExtension(removeBase(decodePath(pathname)));
 
   const pattern = matchRoute(path)?.pattern;
   const locale = pattern === undefined ? undefined : localeByRoutePattern.get(pattern);
@@ -154,6 +153,13 @@ function decodePath(path: string): string {
     // a malformed path (e.g. `/%E0`) is kept as is
     return path;
   }
+}
+
+// a path without the `.html` extension of the pages built as files, with `build.format: "file"`
+// or `"preserve"` (e.g. `/fr/a-propos.html` -> `/fr/a-propos`, `/index.html` -> `/`)
+function removeHtmlExtension(path: string): string {
+  if (buildFormat === "directory") return path;
+  return path.replace(/(\/index)?\.html$/, "") || "/";
 }
 
 // the first of Astro's routes that matches a path, and the path's params (e.g.
