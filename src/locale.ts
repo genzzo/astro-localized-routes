@@ -137,8 +137,15 @@ function getPath(pattern: string, params: Record<string, string | undefined>): s
         if (param === undefined && spread === undefined) {
           throw new Error(`Missing parameter "${name}" for the route "${pattern}"`);
         }
-        // like Astro, we escape the characters that would end the path (e.g. `#` and `?`)
-        return (param ?? "").normalize().replace(/#/g, "%23").replace(/\?/g, "%3F");
+        // like Astro, we escape the characters that would end the path (e.g. `#` and `?`), and also
+        // a `%` that doesn't start an escape sequence, which Astro can't decode (e.g. `50%-off`),
+        // while an escape sequence is kept, since Astro's params keep the ones of reserved
+        // characters (e.g. `c%23-tips` for `/blog/c%23-tips`)
+        return (param ?? "")
+          .normalize()
+          .replace(/%(?![0-9a-f]{2})/gi, "%25")
+          .replace(/#/g, "%23")
+          .replace(/\?/g, "%3F");
       },
     );
     return value === "" ? [] : [value];
