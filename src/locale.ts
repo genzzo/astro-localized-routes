@@ -180,11 +180,10 @@ function removeHtmlExtension(path: string): string {
 function matchRoute(
   path: string,
 ): { pattern: string; params: Record<string, string | undefined> } | undefined {
-  for (const [regex, pattern] of routes) {
+  for (const [regex, pattern, names] of routes) {
     const match = regex.exec(path);
     if (match === null) continue;
-    // the regex captures the params in the order of the pattern, and a rest param can be empty
-    const names = getParamNames(pattern);
+    // the regex captures the params in the order Astro resolved them, and a rest param can be empty
     const params = Object.fromEntries(names.map((name, index) => [name, match[index + 1]]));
     return { pattern, params };
   }

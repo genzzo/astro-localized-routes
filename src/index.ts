@@ -230,13 +230,16 @@ export default function localizedRoutes<Locales extends string>(
                 },
                 load(id) {
                   if (id !== RESOLVED_INTERNAL_ID) return null;
-                  // the regex and pattern of every route, in the order Astro matches them (e.g.
-                  // `/fr/cours` before `/fr/[slug]`), which Astro resolves before loading modules.
-                  // endpoints are included so that the paths they serve aren't matched to a page
-                  // (e.g. `/en/rss.xml` before `/en/[slug]`)
-                  const routes = (resolvedRoutes ?? []).map(
-                    (route) => `[${route.patternRegex}, ${JSON.stringify(route.pattern)}]`,
-                  );
+                  // the regex, pattern and param names of every route, in the order Astro matches
+                  // them (e.g. `/fr/cours` before `/fr/[slug]`), which Astro resolves before
+                  // loading modules. endpoints are included so that the paths they serve aren't
+                  // matched to a page (e.g. `/en/rss.xml` before `/en/[slug]`)
+                  const routes = (resolvedRoutes ?? []).map((route) => {
+                    // a rest param is named without its dots, like in `Astro.params` (e.g.
+                    // `...slug` -> `slug`)
+                    const params = route.params.map((param) => param.replace(/^\.\.\./, ""));
+                    return `[${route.patternRegex}, ${JSON.stringify(route.pattern)}, ${JSON.stringify(params)}]`;
+                  });
                   return [
                     `export const routePatternsToHide = new Set(${JSON.stringify(Array.from(routePatternsToHide))});`,
                     `export const localizedErrorPages = ${JSON.stringify(localizedErrorPages)};`,
