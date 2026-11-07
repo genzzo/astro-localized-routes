@@ -78,8 +78,13 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
    * translated slug). The query and hash of a path are kept. Paths include \`base\` and end with a
    * slash when Astro adds one to its own links, like the paths of \`getAlternates\`.
    *
+   * A param that is missing or \`undefined\` throws an error, so you know when you forgot one,
+   * except a rest param, which can be empty. When a page doesn't exist in every locale (e.g. a post
+   * that isn't translated), set its param to \`null\` to get \`undefined\` instead of an error.
+   *
    * Returns \`undefined\` when the path isn't served by a localized page (e.g. an endpoint or an
-   * error page), or when the page has no path in that locale.
+   * error page), when the page has no path in that locale, or when a param of the route is set to
+   * \`null\`.
    *
    * @example
    * \`\`\`astro
@@ -94,7 +99,7 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
   export function getLocalizedPath(
     pathOrRoute: string | URL,
     locale: Locale,
-    params?: Record<string, string | undefined>,
+    params?: Record<string, string | null | undefined>,
   ): string | undefined;
 }
 `;

@@ -61,7 +61,7 @@ export function getAlternates({
 export function getLocalizedPath(
   pathOrRoute: string | URL,
   locale: string,
-  params: Record<string, string | undefined> = {},
+  params: Record<string, string | null | undefined> = {},
 ): string | undefined {
   // check that the locale is one of the locales, since it can come from the request (e.g. a query
   // param) and the patterns of a page are an object with inherited properties (e.g. `toString`)
@@ -106,7 +106,17 @@ export function getLocalizedPath(
   // the path isn't served by a localized page (e.g. an endpoint), or the page doesn't exist in
   // that locale (e.g. with `missingRouteBehavior: "ignore"`)
   if (pattern === undefined) return undefined;
-  return getPath(pattern, { ...pathParams, ...params }) + suffix;
+  // the params that are passed replace the ones read from the path, and a param of the route set to
+  // `null` means the page has no path in that locale (e.g. a post that isn't translated), while a
+  // param that is missing or `undefined` throws an error in `getPath` so it isn't missed, unless
+  // it's a rest param, which can be empty (e.g. `[...slug]`)
+  const names = getParamNames(pattern);
+  const allParams: Record<string, string | undefined> = { ...pathParams };
+  for (const [name, value] of Object.entries(params)) {
+    if (value !== null) allParams[name] = value;
+    else if (names.includes(name)) return undefined;
+  }
+  return getPath(pattern, allParams) + suffix;
 }
 
 // the page a route serves, including the page's own route when it's removed (e.g. `/about` with
@@ -177,9 +187,15 @@ function matchRoute(
     const match = regex.exec(path);
     if (match === null) continue;
     // the regex captures the params in the order of the pattern, and a rest param can be empty
-    const names = Array.from(pattern.matchAll(/\[(?:\.\.\.)?([^\]]+)\]/g), ([, name]) => name);
+    const names = getParamNames(pattern);
     const params = Object.fromEntries(names.map((name, index) => [name, match[index + 1]]));
     return { pattern, params };
   }
   return undefined;
+}
+
+// the names of the params of a route, in the order of the pattern (e.g. `/[lang]/[...slug]` ->
+// `lang`, `slug`)
+function getParamNames(pattern: string): string[] {
+  return Array.from(pattern.matchAll(/\[(?:\.\.\.)?([^\]]+)\]/g), ([, name]) => name);
 }

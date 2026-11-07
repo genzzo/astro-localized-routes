@@ -150,7 +150,17 @@ const locale = getLocale(Astro);
 
 The params fill the parameters of a route. A path has its own, and the ones you pass replace them, for example for a translated slug: `getLocalizedPath("/journal/mon-article", "en", { slug: "my-article" })` returns `/en/blog/my-article/`. The query and hash of a path are kept, and the result includes `base` and a trailing slash like the paths of `getAlternates`.
 
-It returns `undefined` when the path isn't served by a localized page (for example, an endpoint, an error page or a typo), or when the page has no path in that locale (with `missingRouteBehavior: "ignore"`).
+A param that is missing or `undefined` throws an error, so you know when you forgot one. Rest params (`[...slug]`) can be left out, since they can be empty. When a page doesn't exist in every locale, such as a post that isn't translated, set its param to `null` to get `undefined` instead of an error, and leave out the link:
+
+```astro
+---
+const path = getLocalizedPath("/blog/[slug]", "en", { slug: post.translations.en ?? null });
+---
+
+{path && <a href={path}>Read in English</a>}
+```
+
+It returns `undefined` when the path isn't served by a localized page (for example, an endpoint, an error page or a typo), when the page has no path in that locale (with `missingRouteBehavior: "ignore"`), or when a param of the route is set to `null`.
 
 ## Options
 
