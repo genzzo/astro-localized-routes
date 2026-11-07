@@ -84,7 +84,9 @@ export function getLocalizedPath(
   // a page route (e.g. `/blog/[slug]`) or one of its localized routes (e.g. `/journal/[slug]`)
   let page = getPage(path);
   let pathParams: Record<string, string | undefined> = {};
-  if (page === undefined) {
+  // check if the route contains brackets but it not an actual route (e.g. a typo in `/journal/[slgu]`)
+  const isRoute = typeof pathOrRoute === "string" && /\[[^\]]+\]/.test(path);
+  if (page === undefined && !isRoute) {
     // any other path is matched against Astro's routes as it's written first, like Astro's router
     // does, and then with or without a trailing slash, because pages can require one while
     // endpoints with a file extension never have one (e.g. `/en/rss.xml` with `trailingSlash:
