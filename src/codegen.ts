@@ -20,8 +20,9 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
    *
    * Routes created by the integration return their own locale. Error pages and any other route
    * return the locale the requested path starts with (e.g. \`en\` for \`/en/missing\` or
-   * \`/en/feed.xml\`), or the default locale. Server islands and actions return the locale of the
-   * page that called them.
+   * \`/en/feed.xml\`), or the default locale. After a rewrite, the path it was rewritten to comes
+   * first (e.g. \`fr\` for \`/missing\` rewritten to \`/fr/missing\`). Server islands and actions
+   * return the locale of the page that called them.
    *
    * @example
    * \`\`\`astro
@@ -35,6 +36,7 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
    */
   export function getLocale(context: {
     routePattern: string;
+    url: URL;
     originPathname: string;
     request: Request;
   }): Locale;
@@ -66,6 +68,39 @@ export function virtualModuleTypes(locales: readonly string[], defaultLocale: st
     routePattern: string;
     params: Record<string, string | undefined>;
   }): { locale: Locale; path: string }[];
+  /**
+   * Returns the path of a page in a locale, to link to it. Pass the page's route (e.g.
+   * \`/blog/[slug]\`, as in \`routes\`), one of its localized routes (e.g. \`/journal/[slug]\`), any
+   * path on the site (e.g. \`/journal/mon-article\`), or a URL (e.g. \`Astro.url\`). Routes and
+   * paths are written without \`base\`, like the paths in \`routes\`, while a URL includes it.
+   *
+   * \`params\` fills the parameters of a route, and overrides the ones read from a path (e.g. for a
+   * translated slug). The query and hash of a path are kept. Paths include \`base\` and end with a
+   * slash when Astro adds one to its own links, like the paths of \`getAlternates\`.
+   *
+   * A param that is missing or \`undefined\` throws an error, so you know when you forgot one,
+   * except a rest param, which can be empty. When a page doesn't exist in every locale (e.g. a post
+   * that isn't translated), set its param to \`null\` to get \`undefined\` instead of an error.
+   *
+   * Returns \`undefined\` when the path isn't served by a localized page (e.g. an endpoint or an
+   * error page), when the page has no path in that locale, or when a param of the route is set to
+   * \`null\`.
+   *
+   * @example
+   * \`\`\`astro
+   * ---
+   * import { getLocale, getLocalizedPath } from ${JSON.stringify(VIRTUAL_ID)};
+   *
+   * const locale = getLocale(Astro);
+   * ---
+   * <a href={getLocalizedPath("/blog/[slug]", locale, { slug: "hello" })}>Hello</a>
+   * \`\`\`
+   */
+  export function getLocalizedPath(
+    pathOrRoute: string | URL,
+    locale: Locale,
+    params?: Record<string, string | null | undefined>,
+  ): string | undefined;
 }
 `;
 }

@@ -97,7 +97,12 @@ const locale = getLocale(Astro); // "fr" | "en"
 </html>
 ```
 
-Each localized route returns its own locale, including the localized error pages. The root error pages and any other route return the locale the requested path starts with, or the default locale (for example, `en` for `/en/missing`, even after a rewrite to `/404`, or for `/en/rss.xml` served by `[lang]/rss.xml.ts`). Server islands and actions return the locale of the page that called them, based on the page's URL in the browser. When your middleware rewrites a request to another locale (for example, `/` to `/fr` based on `Accept-Language`), the browser's URL doesn't match the page, so pass the locale yourself, as a prop of the island or in the action's input:
+Each localized route returns its own locale, including the localized error pages. The root error pages and any other route return the locale the requested path starts with, or the default locale (for example, `en` for `/en/rss.xml` served by `[lang]/rss.xml.ts`). After a rewrite, the path the request was rewritten to comes first, unless it doesn't start with a locale: `/missing` rewritten to `/fr/missing` by your middleware gets `fr`, and `/en/missing` rewritten to `/404` keeps `en`. A prerendered root 404 page is built once, so it always gets the default locale, whatever missing path the host serves it for.
+
+Server islands and actions return the locale of the page that called them, from the page's URL that the browser sends in the `Referer` header. Pass the locale yourself, as a prop of the island or in the action's input, when that URL doesn't give it:
+
+- Your middleware rewrites a request to another locale (for example, `/` to `/fr` based on `Accept-Language`), so the browser's URL doesn't match the page.
+- Your `Referrer-Policy` is `no-referrer`, `origin` or `strict-origin`, which leave out the path, so the default locale is returned. By default, browsers send the full URL to your own site.
 
 ```astro
 <Island server:defer locale={getLocale(Astro)} />
@@ -126,14 +131,43 @@ const alternates = getAlternates(Astro);
 
 `getAlternates` returns the path of the current page in every locale it exists in, the current locale included. Use it for a language switcher, or for `hreflang` links, which need `site` in your config, because `new URL` throws without it. Paths include `base` and end with a slash when Astro adds one to its own links (with `trailingSlash: "always"`, or `"ignore"` with `build.format: "directory"`).
 
-Dynamic routes use the current params for every locale, so `/journal/mon-article` gets `/en/blog/mon-article/`. If your slugs are translated, or an entry doesn't exist in every locale (for example, a post that is only in French), build those links yourself for now, otherwise they lead to pages that weren't built. Error pages, server islands, actions and routes of pages that aren't localized return an empty list. With `removeOriginalPageRoutes` disabled, an original route that no locale uses (for example, `/about` next to `/a-propos`) returns the alternates of its page, which don't include its own path.
+Dynamic routes use the current params for every locale, so `/journal/mon-article` gets `/en/blog/mon-article/`. If your slugs are translated, or an entry doesn't exist in every locale (for example, a post that is only in French), build those links with [`getLocalizedPath`](#linking-to-other-pages) instead, otherwise they lead to pages that weren't built. Error pages, server islands, actions and routes of pages that aren't localized return an empty list. With `removeOriginalPageRoutes` disabled, an original route that no locale uses (for example, `/about` next to `/a-propos`) returns the alternates of its page, which don't include its own path.
+
+### Linking to other pages
+
+```astro
+---
+import { getLocale, getLocalizedPath } from "virtual:astro-localized-routes";
+
+const locale = getLocale(Astro);
+---
+
+<a href={getLocalizedPath("/about", locale)}>About</a>
+<a href={getLocalizedPath("/blog/[slug]", locale, { slug: "mon-article" })}>Mon article</a>
+```
+
+`getLocalizedPath` returns the path of a page in a locale. Pass the page's route, as in `routes` (for example, `/blog/[slug]`), one of its localized routes (`/journal/[slug]`), or any path on your site (`/journal/mon-article` or `/en/about#team`). Routes and paths are written without `base`, like the paths in `routes`. For a URL that includes `base`, such as `Astro.url`, pass the `URL` object itself.
+
+The params fill the parameters of a route. A path has its own, and the ones you pass replace them, for example for a translated slug: `getLocalizedPath("/journal/mon-article", "en", { slug: "my-article" })` returns `/en/blog/my-article/`. The query and hash of a path are kept, and the result includes `base` and a trailing slash like the paths of `getAlternates`.
+
+A param that is missing or `undefined` throws an error, so you know when you forgot one. Rest params (`[...slug]`) can be left out, since they can be empty. When a page doesn't exist in every locale, such as a post that isn't translated, set its param to `null` to get `undefined` instead of an error, and leave out the link:
+
+```astro
+---
+const path = getLocalizedPath("/blog/[slug]", "en", { slug: post.translations.en ?? null });
+---
+
+{path && <a href={path}>Read in English</a>}
+```
+
+It returns `undefined` when the path isn't served by a localized page (for example, an endpoint, an error page or a typo), when the page has no path in that locale (with `missingRouteBehavior: "ignore"`), or when a param of the route is set to `null`.
 
 ## Options
 
 | Option                     | Default      | Description                                                                                                                                                                          |
 | -------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `locales`                  | required     | The locales supported by your site.                                                                                                                                                  |
-| `defaultLocale`            | required     | The locale that is served without a URL prefix.                                                                                                                                      |
+| `defaultLocale`            | required     | One of the `locales`, served without a URL prefix.                                                                                                                                   |
 | `routes`                   | required     | Defines the path for each page in each locale, keyed by the page's route (for example, `"/about": { fr: "/a-propos", en: "/about" }`). `/` defaults to `/` for every locale.         |
 | `prefixDefaultLocale`      | `false`      | Also serve the default locale using its locale prefix (for example, `/fr/a-propos`).                                                                                                 |
 | `missingRouteBehavior`     | `"error"`    | Controls missing locale paths: `"error"`, `"warn"`, `"ignore"`, `"use_default"` (use the page's original path under the locale prefix), or a function returning one of these values. |

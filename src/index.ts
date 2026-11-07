@@ -157,6 +157,29 @@ export default function localizedRoutes<Locales extends string>(
               );
             }
 
+            // the root error page is rendered for any missing path, so it doesn't have a locale of
+            // its own (e.g. `/404` for the default locale without a prefix)
+            if (isErrorPage && localizedPattern === basePattern) continue;
+
+            // check if the localized pattern conflicts with any existing claimed patterns, except
+            // the page's own route, which the page already claims
+            if (localizedPattern !== basePattern) {
+              const claimTrial = claimedPatternsChecker.tryClaim(localizedPattern, file, locale);
+              if (!claimTrial.claimed)
+                throw new Error(
+                  `Localized pattern conflict: pattern "${localizedPattern}" for file "${file}" and locale "${locale}" conflicts with existing pattern "${claimTrial.existing.pattern}" for file "${claimTrial.existing.file}"${claimTrial.existing.locale ? ` and locale "${claimTrial.existing.locale}"` : ""}`,
+                );
+            }
+
+            // a route can only have one locale, which covers what claiming doesn't, such as two
+            // locales served by the page's own route (e.g. `en: "/fr/x"` and `fr: "/x"` for
+            // `fr/x.astro`)
+            const existingLocale = localeByRoutePattern.get(localizedPattern);
+            if (existingLocale !== undefined) {
+              throw new Error(
+                `Localized pattern conflict: pattern "${localizedPattern}" for file "${file}" and locale "${locale}" is already used by locale "${existingLocale}"`,
+              );
+            }
             localeByRoutePattern.set(localizedPattern, locale);
 
             // error pages don't have alternates, because they're rendered for any missing path
@@ -170,13 +193,6 @@ export default function localizedRoutes<Locales extends string>(
               keepOriginal = true; // served by the page's own route
               continue;
             }
-
-            // check if the localized pattern conflicts with any existing claimed patterns
-            const claimTrial = claimedPatternsChecker.tryClaim(localizedPattern, file, locale);
-            if (!claimTrial.claimed)
-              throw new Error(
-                `Localized pattern conflict: pattern "${localizedPattern}" for file "${file}" and locale "${locale}" conflicts with existing pattern "${claimTrial.existing.pattern}" for file "${claimTrial.existing.file}"${claimTrial.existing.locale ? ` and locale "${claimTrial.existing.locale}"` : ""}`,
-              );
 
             injectRoute({ pattern: localizedPattern, entrypoint: path.join(pagesDir, file) });
 
@@ -216,11 +232,16 @@ export default function localizedRoutes<Locales extends string>(
                 },
                 load(id) {
                   if (id !== RESOLVED_INTERNAL_ID) return null;
-                  // the regex and pattern of every page, in the order Astro matches them (e.g.
-                  // `/fr/cours` before `/fr/[slug]`), which Astro resolves before loading modules
-                  const pageRoutes = (resolvedRoutes ?? [])
-                    .filter((route) => route.type === "page")
-                    .map((route) => `[${route.patternRegex}, ${JSON.stringify(route.pattern)}]`);
+                  // the regex, pattern and param names of every route, in the order Astro matches
+                  // them (e.g. `/fr/cours` before `/fr/[slug]`), which Astro resolves before
+                  // loading modules. endpoints are included so that the paths they serve aren't
+                  // matched to a page (e.g. `/en/rss.xml` before `/en/[slug]`)
+                  const routes = (resolvedRoutes ?? []).map((route) => {
+                    // a rest param is named without its dots, like in `Astro.params` (e.g.
+                    // `...slug` -> `slug`)
+                    const params = route.params.map((param) => param.replace(/^\.\.\./, ""));
+                    return `[${route.patternRegex}, ${JSON.stringify(route.pattern)}, ${JSON.stringify(params)}]`;
+                  });
                   return [
                     `export const routePatternsToHide = new Set(${JSON.stringify(Array.from(routePatternsToHide))});`,
                     `export const localizedErrorPages = ${JSON.stringify(localizedErrorPages)};`,
@@ -229,7 +250,7 @@ export default function localizedRoutes<Locales extends string>(
                     `export const localeByRoutePattern = new Map(${JSON.stringify(Array.from(localeByRoutePattern))});`,
                     `export const localizedPatternsByPage = new Map(${JSON.stringify(Array.from(localizedPatternsByPage))});`,
                     `export const pageByRoutePattern = new Map(${JSON.stringify(Array.from(pageByRoutePattern))});`,
-                    `export const pageRoutes = [${pageRoutes.join(", ")}];`,
+                    `export const routes = [${routes.join(", ")}];`,
                     `export const buildFormat = ${JSON.stringify(astroConfig.build.format)};`,
                     `export const base = ${JSON.stringify(astroConfig.base.replace(/\/$/, ""))};`,
                     `export const trailingSlash = ${JSON.stringify(astroConfig.trailingSlash)};`,
