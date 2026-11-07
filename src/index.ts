@@ -104,8 +104,6 @@ export default function localizedRoutes<Locales extends string>(
           // root error pages should always be kept as Astro needs them as fallback routes
           let keepOriginal = isErrorPage || !resolvedOptions.removeOriginalPageRoutes;
           const localizedPatterns: Partial<Record<Locales, string>> = {};
-          // the locale served by the page's own route, which isn't claimed like the injected ones
-          let originalRouteLocale: Locales | undefined;
 
           for (const locale of resolvedOptions.locales) {
             let localizedPattern: string | undefined =
@@ -163,6 +161,25 @@ export default function localizedRoutes<Locales extends string>(
             // its own (e.g. `/404` for the default locale without a prefix)
             if (isErrorPage && localizedPattern === basePattern) continue;
 
+            // check if the localized pattern conflicts with any existing claimed patterns, except
+            // the page's own route, which the page already claims
+            if (localizedPattern !== basePattern) {
+              const claimTrial = claimedPatternsChecker.tryClaim(localizedPattern, file, locale);
+              if (!claimTrial.claimed)
+                throw new Error(
+                  `Localized pattern conflict: pattern "${localizedPattern}" for file "${file}" and locale "${locale}" conflicts with existing pattern "${claimTrial.existing.pattern}" for file "${claimTrial.existing.file}"${claimTrial.existing.locale ? ` and locale "${claimTrial.existing.locale}"` : ""}`,
+                );
+            }
+
+            // a route can only have one locale, which covers what claiming doesn't, such as two
+            // locales served by the page's own route (e.g. `en: "/fr/x"` and `fr: "/x"` for
+            // `fr/x.astro`)
+            const existingLocale = localeByRoutePattern.get(localizedPattern);
+            if (existingLocale !== undefined) {
+              throw new Error(
+                `Localized pattern conflict: pattern "${localizedPattern}" for file "${file}" and locale "${locale}" is already used by locale "${existingLocale}"`,
+              );
+            }
             localeByRoutePattern.set(localizedPattern, locale);
 
             // error pages don't have alternates, because they're rendered for any missing path
@@ -173,24 +190,9 @@ export default function localizedRoutes<Locales extends string>(
             }
 
             if (localizedPattern === basePattern) {
-              // only one locale can be served by the page's own route (e.g. not both `en: "/fr/x"`
-              // and `fr: "/x"` for `fr/x.astro`)
-              if (originalRouteLocale !== undefined) {
-                throw new Error(
-                  `Localized pattern conflict: pattern "${localizedPattern}" for file "${file}" is used by both locales "${originalRouteLocale}" and "${locale}"`,
-                );
-              }
-              originalRouteLocale = locale;
               keepOriginal = true; // served by the page's own route
               continue;
             }
-
-            // check if the localized pattern conflicts with any existing claimed patterns
-            const claimTrial = claimedPatternsChecker.tryClaim(localizedPattern, file, locale);
-            if (!claimTrial.claimed)
-              throw new Error(
-                `Localized pattern conflict: pattern "${localizedPattern}" for file "${file}" and locale "${locale}" conflicts with existing pattern "${claimTrial.existing.pattern}" for file "${claimTrial.existing.file}"${claimTrial.existing.locale ? ` and locale "${claimTrial.existing.locale}"` : ""}`,
-              );
 
             injectRoute({ pattern: localizedPattern, entrypoint: path.join(pagesDir, file) });
 
