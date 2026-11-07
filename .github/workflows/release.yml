@@ -25,6 +25,16 @@ jobs:
         with:
           node-version-file: package.json
 
+      - name: Check that the tag matches the version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="v$(node -p 'require("./package.json").version')"
+          if [ "$TAG" != "$version" ]; then
+            echo "::error::The tag $TAG doesn't match the version in package.json ($version)"
+            exit 1
+          fi
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts --filter astro-localized-routes
 
